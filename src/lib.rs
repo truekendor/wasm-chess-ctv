@@ -85,10 +85,10 @@ impl WasmChess {
             let move_uci: UciMove = match UciMove::from_ascii(ascii_move) {
                 Ok(val) => val,
                 Err(err) => {
-                    console::log_1(
-                        &format!("{}. Attempted conversion: {}", err, uci_move_str).into(),
-                    );
-                    return Err(err.to_string());
+                    return Err(format!(
+                        "Error converting UCI from ascii\nError msg: {}. Attempted conversion: {}",
+                        err, uci_move_str
+                    ));
                 }
             };
 
