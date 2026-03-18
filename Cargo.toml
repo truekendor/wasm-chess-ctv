@@ -1,0 +1,31 @@
+[package]
+name = "chess-wasm"
+version = "0.1.0"
+edition = "2024"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+shakmaty = { version = "0.30.0", features = ["serde"] }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["console"] }
+js-sys = "0.3"
+serde-wasm-bindgen = "0.6"
+
+
+# Enable simd feature for this crate
+[features]
+default = []
+simd = []
+
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = true
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
