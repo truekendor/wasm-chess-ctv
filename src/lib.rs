@@ -6,14 +6,14 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::console;
 
 #[wasm_bindgen]
-struct ChessInterfaceJS {
+struct WasmChess {
     chess: Chess,
 }
 
 #[wasm_bindgen]
-impl ChessInterfaceJS {
-    pub fn new() -> ChessInterfaceJS {
-        ChessInterfaceJS {
+impl WasmChess {
+    pub fn new() -> WasmChess {
+        WasmChess {
             chess: Chess::default(),
         }
     }
