@@ -3,7 +3,7 @@
 This project currently focused on replacing performance-critical sections of chess.js with compiled WASM bindings. 
 
 
-To compile the WASM code use ```wasm-pack build --target web```
+To compile the rust code to WASM use ```wasm-pack build --target web```
 
 
 # Acknowledgements
