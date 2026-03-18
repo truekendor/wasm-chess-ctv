@@ -52,24 +52,30 @@ impl WasmChess {
         uci_moves: Vec<String>,
         starting_fen: Option<String>,
     ) -> Result<Vec<String>, String> {
-        let starting_fen = starting_fen.unwrap_or(
-            Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string(),
-        );
+        let starting_fen = starting_fen.unwrap_or_else(|| {
+            console::log_1(&format!("Argument for starting FEN was not provided.\nAttempting use FEN of a stating position",).into());
+
+            Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
+        });
+
         let mut san_moves_vec: Vec<String> = vec![];
 
         let fen: Fen = match starting_fen.parse() {
             Ok(val) => val,
             Err(err) => {
-                console::log_1(&format!("{}", err).into());
                 return Err(err.to_string());
             }
         };
 
-        let mut chess_pos: Chess = match fen.into_position(shakmaty::CastlingMode::Chess960) {
+        let mut chess_pos: Chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960)
+        {
             Ok(val) => val,
             Err(err) => {
-                console::log_1(&format!("{}", err).into());
-                return Err(err.to_string());
+                return Err(format!(
+                    "Error converting FEN into position: {}\nPassed FEN: {}",
+                    err,
+                    fen.to_string()
+                ));
             }
         };
 
@@ -89,8 +95,10 @@ impl WasmChess {
             let internal_move = match move_uci.to_move(&chess_pos) {
                 Ok(val) => val,
                 Err(err) => {
-                    console::log_1(&format!("{}", err).into());
-                    return Err(err.to_string());
+                    return Err(format!(
+                        "{}. Failed UCI move conversion: {}",
+                        err, uci_move_str
+                    ));
                 }
             };
 
@@ -100,15 +108,12 @@ impl WasmChess {
             chess_pos = match chess_pos.play(internal_move) {
                 Ok(val) => val,
                 Err(err) => {
-                    console::log_1(
-                        &format!(
-                            "{}\nAttempted move play: {}",
-                            err,
-                            internal_move.to_string()
-                        )
-                        .into(),
-                    );
-                    return Err(err.to_string());
+                    return Err(format!(
+                        "{}\nAttempted to play: {}\nFen: {}",
+                        err,
+                        internal_move.to_string(),
+                        fen.to_string()
+                    ));
                 }
             };
         }
