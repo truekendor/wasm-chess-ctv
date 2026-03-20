@@ -39,7 +39,7 @@ impl WasmChess {
         };
 
         Ok(WasmChess {
-            history: vec![Fen::from_position(&chess, shakmaty::EnPassantMode::Always)],
+            history: vec![fen],
             chess: chess,
         })
     }
@@ -74,7 +74,7 @@ impl WasmChess {
 
     fn str_to_move(&self, move_str: &str) -> Result<Move, String> {
         // if move is in a UCI format we play it and return
-        // else we know that there is a parsing error
+        // otherwise we know that there is a parsing error
         // because move is either in SAN format or illegal
         match move_str.parse::<UciMove>() {
             Ok(val) => match val.to_move(&self.chess) {
