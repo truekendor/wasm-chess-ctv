@@ -1,12 +1,6 @@
-use shakmaty::{
-    Chess, Move, Position,
-    fen::Fen,
-    san::San,
-    uci::{ParseUciMoveError, UciMove},
-};
+use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
 
 use wasm_bindgen::prelude::wasm_bindgen;
-use web_sys::console;
 
 mod parsing;
 
@@ -61,6 +55,9 @@ impl WasmChess {
         match self.chess.clone().play(internal_move) {
             Ok(val) => {
                 self.chess = val;
+
+                let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
+                self.history.push(fen);
 
                 return Ok(());
             }
@@ -121,7 +118,7 @@ impl WasmChess {
         ))
     }
 
-    fn reset() {
+    pub fn reset() {
         todo!()
     }
 
@@ -139,8 +136,14 @@ impl WasmChess {
         fen.to_string()
     }
 
-    fn fen_at(&self, index: i32) -> Result<String, String> {
-        todo!()
+    pub fn fen_at(&self, index: usize) -> Result<String, String> {
+        if index > self.history.len() {
+            return Err(format!("Index out of bounds: {}", index));
+        }
+
+        let fen = &self.history[index];
+
+        Ok(fen.to_string())
     }
 
     fn load_pgn() {
