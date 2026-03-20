@@ -137,7 +137,7 @@ impl WasmChess {
     }
 
     pub fn fen_at(&self, index: usize) -> Result<String, String> {
-        if index > self.history.len() {
+        if index >= self.history.len() {
             return Err(format!("Index out of bounds: {}", index));
         }
 
