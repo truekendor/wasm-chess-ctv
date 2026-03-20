@@ -73,7 +73,8 @@ impl WasmChess {
     }
 
     fn str_to_move(&self, move_str: &str) -> Result<Move, String> {
-        // if move is in a UCI format we play it and return
+        // if move is in a UCI format we immediately
+        // try to return it
         // otherwise we know that there is a parsing error
         // because move is either in SAN format or illegal
         match move_str.parse::<UciMove>() {
@@ -93,8 +94,8 @@ impl WasmChess {
             }
         };
 
-        // if we're here it means that the move is either illegal
-        // or in a SAN format
+        // if we're here it means that the move is either
+        // illegal or in a SAN format
         match move_str.parse::<San>() {
             Ok(val) => match val.to_move(&self.chess) {
                 Ok(valid_move) => return Ok(valid_move),
@@ -144,6 +145,10 @@ impl WasmChess {
         let fen = &self.history[index];
 
         Ok(fen.to_string())
+    }
+
+    fn undo() {
+        todo!()
     }
 
     fn load_pgn() {
