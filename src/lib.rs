@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
 
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 mod parsing;
 
@@ -8,6 +9,19 @@ mod parsing;
 struct WasmChess {
     chess: Chess,
     history: Vec<Fen>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JSMoveObj {
+    from: String,
+    to: String,
+    promotion: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+struct JSPreserveHeaders {
+    skip_validation: Option<bool>,
+    preserve_headers: Option<bool>,
 }
 
 #[wasm_bindgen]
@@ -44,8 +58,12 @@ impl WasmChess {
         })
     }
 
+    // TODO add zobrist hash history?
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
         let internal_move = self.str_to_move(move_str);
+
+        // self.chess
+        //     .update_zobrist_hash(&self.chess, move_str, shakmaty::EnPassantMode::Legal);
 
         let internal_move: Move = match internal_move {
             Ok(val) => val,
@@ -70,6 +88,23 @@ impl WasmChess {
                 ));
             }
         }
+    }
+
+    fn make_move_from_obj(&mut self, move_obj: JsValue) -> Result<(), String> {
+        if !move_obj.is_object() {
+            return Err(format!("Input is not an object"));
+        }
+
+        let move_obj: JSMoveObj = match serde_wasm_bindgen::from_value::<JSMoveObj>(move_obj) {
+            Ok(val) => val,
+            Err(err) => {
+                return Err(format!("{}", err.to_string()));
+            }
+        };
+
+        // need to handle captures, castles, en passant
+
+        todo!()
     }
 
     fn str_to_move(&self, move_str: &str) -> Result<Move, String> {
@@ -127,8 +162,47 @@ impl WasmChess {
         todo!()
     }
 
-    fn load() {
-        todo!()
+    pub fn load(
+        &mut self,
+        starting_fen: String,
+        // TODO: I don't even know if we can just skip fen validation
+        // options: JsValue
+    ) -> Result<(), String> {
+        self.history.clear();
+
+        // let options = match serde_wasm_bindgen::from_value::<JSPreserveHeaders>(options) {
+        //     Ok(val) => val,
+        //     Err(err) => {
+        //         // idk if we should return an error if option parsing went wrong
+
+        //         JSPreserveHeaders::default()
+        //     }
+        // };
+
+        let fen: Fen = match starting_fen.parse() {
+            Ok(val) => val,
+            Err(err) => {
+                return Err(format!(
+                    "Error parsing fen string\nError message: {}\n«{}» is not a valid fen",
+                    err, starting_fen
+                ));
+            }
+        };
+
+        self.chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
+            Ok(val) => val,
+            Err(err) => {
+                return Err(format!(
+                    "Error converting FEN into chess position\nError message: {}\nFEN: {}",
+                    err,
+                    fen.to_string()
+                ));
+            }
+        };
+
+        self.history.push(fen);
+
+        Ok(())
     }
 
     pub fn fen(&self) -> String {
@@ -159,7 +233,51 @@ impl WasmChess {
         todo!()
     }
 
-    fn move_number() {
+    pub fn move_number_fullmoves(&self) -> u32 {
+        let move_number = &self.chess.fullmoves();
+
+        move_number.get()
+    }
+
+    pub fn fifty_move_rule(&self) -> u32 {
+        let move_number = &self.chess.halfmoves();
+
+        *move_number
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.chess.is_game_over()
+    }
+
+    pub fn is_check(&self) -> bool {
+        self.chess.is_check()
+    }
+
+    pub fn is_checkmate(&self) -> bool {
+        self.chess.is_checkmate()
+    }
+
+    pub fn is_draw_by_fifty_moves(&self) -> bool {
+        self.chess.halfmoves() >= 100
+    }
+
+    pub fn is_insufficient_material(&self) -> bool {
+        self.chess.is_insufficient_material()
+    }
+
+    fn is_treefold_repetition(&self) -> bool {
+        // check zobrist hash???
+        todo!()
+    }
+
+    pub fn is_draw(&self) -> bool {
+        self.chess.is_stalemate()
+            || self.chess.is_insufficient_material()
+            || self.is_draw_by_fifty_moves()
+        // TODO threefold repetition case???
+    }
+
+    fn history(&self) {
         todo!()
     }
 
