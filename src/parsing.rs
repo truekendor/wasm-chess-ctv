@@ -1,6 +1,6 @@
 use shakmaty::{Chess, Position, fen::Fen, san::San, uci::UciMove};
-use wasm_bindgen::prelude::wasm_bindgen;
 
+/// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
 pub fn uci_to_san(
     uci_moves: Vec<String>,
     starting_fen: Option<String>,
@@ -72,8 +72,8 @@ pub fn uci_to_san(
     Ok(san_moves_vec)
 }
 
-// converts Vec<string> of a PV's in a format of "e2e4 e7e5 ..." into Vec of SAN moves
-
+/// converts Vec<string> of a  PV's into Vec of SAN moves
+/// PV is a string of UCI moves separated by a whitespace char, like "e2e4 e7e6 b1c3"
 pub fn uci_pv_to_san(
     uci_moves: Vec<String>,
     starting_fen: Option<String>,
