@@ -239,10 +239,8 @@ impl WasmChess {
         move_number.get()
     }
 
-    pub fn fifty_move_rule(&self) -> u32 {
-        let move_number = &self.chess.halfmoves();
-
-        *move_number
+    pub fn halfmoves(&self) -> u32 {
+        self.chess.halfmoves()
     }
 
     pub fn is_game_over(&self) -> bool {
