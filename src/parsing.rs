@@ -1,5 +1,7 @@
 use shakmaty::{Chess, Position, fen::Fen, san::San, uci::UciMove};
 
+// TODO apparently the input may or may not include SAN moves also.
+// TODO should use move_to_str to handle such cases
 /// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
 pub fn uci_to_san(
     uci_moves: Vec<String>,
@@ -31,9 +33,7 @@ pub fn uci_to_san(
     };
 
     for uci_move_str in uci_moves {
-        let ascii_move = uci_move_str.as_bytes();
-
-        let move_uci: UciMove = match UciMove::from_ascii(ascii_move) {
+        let move_uci: UciMove = match uci_move_str.parse() {
             Ok(val) => val,
             Err(err) => {
                 return Err(format!(

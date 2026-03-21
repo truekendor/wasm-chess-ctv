@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
+use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove, zobrist::Zobrist64};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -9,6 +11,8 @@ mod parsing;
 struct WasmChess {
     chess: Chess,
     history: Vec<Fen>,
+    hash: Zobrist64,
+    position_count: HashMap<Zobrist64, i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,23 +56,51 @@ impl WasmChess {
             }
         };
 
+        let zobrist_hash: Zobrist64 = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+
+        let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
+
         Ok(WasmChess {
             history: vec![fen],
             chess: chess,
+            hash: zobrist_hash,
+            position_count,
         })
     }
 
-    // TODO add zobrist hash history?
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
         let internal_move = self.str_to_move(move_str);
-
-        // self.chess
-        //     .update_zobrist_hash(&self.chess, move_str, shakmaty::EnPassantMode::Legal);
 
         let internal_move: Move = match internal_move {
             Ok(val) => val,
             Err(err) => return Err(err),
         };
+
+        if self.chess.is_legal(internal_move) {
+            let zobrist_hash_update: Zobrist64 = match self.chess.update_zobrist_hash(
+                self.hash,
+                internal_move,
+                shakmaty::EnPassantMode::Legal,
+            ) {
+                Some(val) => val,
+                None => {
+                    let zobrist_hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+
+                    zobrist_hash
+                }
+            };
+
+            self.hash = zobrist_hash_update;
+
+            match self.position_count.get_mut(&zobrist_hash_update) {
+                Some(val) => {
+                    *val += 1;
+                }
+                None => {
+                    self.position_count.insert(zobrist_hash_update, 1);
+                }
+            }
+        }
 
         match self.chess.clone().play(internal_move) {
             Ok(val) => {
@@ -233,7 +265,7 @@ impl WasmChess {
         todo!()
     }
 
-    pub fn move_number_fullmoves(&self) -> u32 {
+    pub fn fullmoves(&self) -> u32 {
         let move_number = &self.chess.fullmoves();
 
         move_number.get()
@@ -244,7 +276,7 @@ impl WasmChess {
     }
 
     pub fn is_game_over(&self) -> bool {
-        self.chess.is_game_over()
+        self.chess.is_game_over() || self.is_draw_by_fifty_moves() || self.is_threefold_repetition()
     }
 
     pub fn is_check(&self) -> bool {
@@ -263,16 +295,23 @@ impl WasmChess {
         self.chess.is_insufficient_material()
     }
 
-    fn is_treefold_repetition(&self) -> bool {
-        // check zobrist hash???
-        todo!()
+    pub fn is_threefold_repetition(&self) -> bool {
+        let count = self.position_count.get(&self.hash);
+
+        if count.is_some() {
+            let count = count.unwrap();
+
+            return *count >= 3;
+        }
+
+        false
     }
 
     pub fn is_draw(&self) -> bool {
         self.chess.is_stalemate()
             || self.chess.is_insufficient_material()
             || self.is_draw_by_fifty_moves()
-        // TODO threefold repetition case???
+            || self.is_threefold_repetition()
     }
 
     fn history(&self) {
