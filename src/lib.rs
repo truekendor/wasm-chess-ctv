@@ -6,6 +6,8 @@ use shakmaty::{Chess, Move, Position, fen::Fen, zobrist::Zobrist64};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use web_sys::console;
 
+use crate::parsing::ErrorWithValue;
+
 mod parsing;
 
 #[wasm_bindgen]
@@ -286,27 +288,10 @@ impl WasmChess {
         uci_moves: Vec<String>,
         starting_fen: Option<String>,
     ) -> Result<Vec<String>, JsValue> {
-        let san_moves_vec = match parsing::uci_to_san(uci_moves, starting_fen) {
-            Ok(val) => val,
-            Err(err) => {
-                let error_with_value = match serde_wasm_bindgen::to_value(&err) {
-                    Ok(val) => val,
-                    Err(err) => {
-                        console::log_1(
-                            &format!(
-                                "Failed to convert error with value to JsValue: {}",
-                                err.to_string()
-                            )
-                            .into(),
-                        );
-
-                        return Err(JsValue::null());
-                    }
-                };
-
-                return Err(error_with_value);
-            }
-        };
+        let san_moves_vec: Vec<String> =
+            parsing::uci_to_san(uci_moves, starting_fen).map_err(|err| {
+                return self.convert_error_to_js_value(err);
+            })?;
 
         Ok(san_moves_vec)
     }
@@ -317,14 +302,31 @@ impl WasmChess {
         &self,
         uci_moves: Vec<String>,
         starting_fen: Option<String>,
-    ) -> Result<Vec<String>, String> {
-        let san_moves_vec = match parsing::uci_pv_to_san(uci_moves, starting_fen) {
+    ) -> Result<Vec<String>, JsValue> {
+        let san_moves_vec: Vec<String> =
+            parsing::uci_pv_to_san(uci_moves, starting_fen).map_err(|err| {
+                return self.convert_error_to_js_value(err);
+            })?;
+
+        Ok(san_moves_vec)
+    }
+
+    fn convert_error_to_js_value(&self, err: ErrorWithValue) -> JsValue {
+        let error_with_value = match serde_wasm_bindgen::to_value(&err) {
             Ok(val) => val,
             Err(err) => {
-                return Err(err);
+                console::log_1(
+                    &format!(
+                        "Failed to convert error with value to JsValue: {}",
+                        err.to_string()
+                    )
+                    .into(),
+                );
+
+                return JsValue::null();
             }
         };
 
-        Ok(san_moves_vec)
+        return error_with_value;
     }
 }

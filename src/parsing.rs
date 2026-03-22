@@ -80,12 +80,13 @@ pub fn uci_to_san(
     Ok(san_moves_vec)
 }
 
+/// ! unused
 /// converts Vec<string> of a  PV's into Vec of SAN moves
 /// PV is a string of UCI moves separated by a whitespace char, like "e2e4 e7e6 b1c3"
 pub fn uci_pv_to_san(
     uci_moves: Vec<String>,
     starting_fen: Option<String>,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<String>, ErrorWithValue> {
     let starting_fen = starting_fen.unwrap_or(
         // console::log_1(&format!("Argument for starting FEN was not provided.\nAttempting use FEN of a stating position",).into());
         Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string(),
@@ -96,18 +97,24 @@ pub fn uci_pv_to_san(
     let fen: Fen = match starting_fen.parse() {
         Ok(val) => val,
         Err(err) => {
-            return Err(err.to_string());
+            return Err(ErrorWithValue {
+                moves: san_moves_vec,
+                message: err.to_string(),
+            });
         }
     };
 
     let mut chess_pos: Chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
         Ok(val) => val,
         Err(err) => {
-            return Err(format!(
-                "Error converting FEN into position: {}\nPassed FEN: {}",
-                err,
-                fen.to_string()
-            ));
+            return Err(ErrorWithValue {
+                message: format!(
+                    "Error converting FEN into position: {}\nStarting FEN: {}",
+                    err,
+                    fen.to_string()
+                ),
+                moves: san_moves_vec,
+            });
         }
     };
 
@@ -117,25 +124,17 @@ pub fn uci_pv_to_san(
         let mut first_move = true;
 
         for pv_uci_move in uci_move_str.split_ascii_whitespace() {
-            let ascii_move = pv_uci_move.as_bytes();
-
-            let move_uci: UciMove = match UciMove::from_ascii(ascii_move) {
+            let internal_move: Move = match str_to_move(&pv_uci_move, &chess_pos) {
                 Ok(val) => val,
                 Err(err) => {
-                    return Err(format!(
-                        "Error converting UCI from ascii\nError msg: {}. Attempted conversion: {}",
-                        err, uci_move_str
-                    ));
-                }
-            };
-
-            let internal_move = match move_uci.to_move(&chess_pos_pv) {
-                Ok(val) => val,
-                Err(err) => {
-                    return Err(format!(
-                        "{}. Failed UCI move conversion: {}",
-                        err, uci_move_str
-                    ));
+                    return Err(ErrorWithValue {
+                        moves: san_moves_vec,
+                        message: format!(
+                            "Error: {}\nStarting FEN: {}",
+                            err.to_string(),
+                            fen.to_string()
+                        ),
+                    });
                 }
             };
 
@@ -145,12 +144,15 @@ pub fn uci_pv_to_san(
             chess_pos_pv = match chess_pos_pv.play(internal_move) {
                 Ok(val) => val,
                 Err(err) => {
-                    return Err(format!(
-                        "{}\nAttempted to play: {}\nFen: {}",
-                        err,
-                        internal_move.to_string(),
-                        fen.to_string()
-                    ));
+                    return Err(ErrorWithValue {
+                        moves: san_moves_vec,
+                        message: format!(
+                            "{}\nAttempted to play: {}\nFen: {}",
+                            err,
+                            internal_move.to_string(),
+                            fen.to_string()
+                        ),
+                    });
                 }
             };
 
