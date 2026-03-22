@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove, zobrist::Zobrist64};
+use shakmaty::{Chess, Move, Position, fen::Fen, zobrist::Zobrist64};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use web_sys::console;
 
 mod parsing;
 
@@ -69,7 +70,7 @@ impl WasmChess {
     }
 
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
-        let internal_move = self.str_to_move(move_str);
+        let internal_move = parsing::str_to_move(move_str, &self.chess);
 
         let internal_move: Move = match internal_move {
             Ok(val) => val,
@@ -139,54 +140,7 @@ impl WasmChess {
         todo!()
     }
 
-    fn str_to_move(&self, move_str: &str) -> Result<Move, String> {
-        // if move is in a UCI format we immediately
-        // try to return it
-        // otherwise we know that there is a parsing error
-        // because move is either in SAN format or illegal
-        match move_str.parse::<UciMove>() {
-            Ok(val) => match val.to_move(&self.chess) {
-                Ok(valid_move) => return Ok(valid_move),
-                Err(err) => {
-                    return Err(format!(
-                        "Error: {}\nMove: {}\nFEN: {}",
-                        err.to_string(),
-                        move_str,
-                        self.fen()
-                    ));
-                }
-            },
-            Err(_) => {
-                // parsing error that we handle later
-            }
-        };
-
-        // if we're here it means that the move is either
-        // illegal or in a SAN format
-        match move_str.parse::<San>() {
-            Ok(val) => match val.to_move(&self.chess) {
-                Ok(valid_move) => return Ok(valid_move),
-                Err(err) => {
-                    return Err(format!(
-                        "Error: {}\nMove: {}\nFEN: {}",
-                        err.to_string(),
-                        move_str,
-                        self.fen()
-                    ));
-                }
-            },
-            Err(_) => {
-                // parsing error that we handle later
-            }
-        };
-
-        Err(format!(
-            "Failed to parse move «{}»\nOnly moves in SAN or UCI formats allowed",
-            move_str
-        ))
-    }
-
-    pub fn reset() {
+    fn reset(&self) {
         todo!()
     }
 
@@ -331,11 +285,26 @@ impl WasmChess {
         &self,
         uci_moves: Vec<String>,
         starting_fen: Option<String>,
-    ) -> Result<Vec<String>, String> {
+    ) -> Result<Vec<String>, JsValue> {
         let san_moves_vec = match parsing::uci_to_san(uci_moves, starting_fen) {
             Ok(val) => val,
             Err(err) => {
-                return Err(err);
+                let error_with_value = match serde_wasm_bindgen::to_value(&err) {
+                    Ok(val) => val,
+                    Err(err) => {
+                        console::log_1(
+                            &format!(
+                                "Failed to convert error with value to JsValue: {}",
+                                err.to_string()
+                            )
+                            .into(),
+                        );
+
+                        return Err(JsValue::null());
+                    }
+                };
+
+                return Err(error_with_value);
             }
         };
 
