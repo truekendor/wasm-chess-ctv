@@ -1,19 +1,26 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Move, Position, fen::Fen, zobrist::Zobrist64};
+use shakmaty::{
+    Chess, Color, Move, Position,
+    fen::{self, Fen},
+    zobrist::Zobrist64,
+};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use web_sys::console;
 
 use crate::parsing::ErrorWithValue;
 
+mod native_tests;
 mod parsing;
 
 #[wasm_bindgen]
 struct WasmChess {
     chess: Chess,
-    history: Vec<Fen>,
+    // TODO remove
+    fen_history: Vec<Fen>,
+    history: Vec<History>,
     hash: Zobrist64,
     position_count: HashMap<Zobrist64, i32>,
 }
@@ -29,6 +36,15 @@ struct JSMoveObj {
 struct JSPreserveHeaders {
     skip_validation: Option<bool>,
     preserve_headers: Option<bool>,
+}
+
+struct History {
+    internal_move: Move,
+    fen: Fen,
+    move_number: u32,
+    half_moves: u32,
+    turn: Color,
+    position: Chess,
 }
 
 #[wasm_bindgen]
@@ -64,10 +80,11 @@ impl WasmChess {
         let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
 
         Ok(WasmChess {
-            history: vec![fen],
+            fen_history: vec![fen],
             chess: chess,
             hash: zobrist_hash,
             position_count,
+            history: vec![],
         })
     }
 
@@ -78,6 +95,8 @@ impl WasmChess {
             Ok(val) => val,
             Err(err) => return Err(err),
         };
+
+        self.push_history_entry(internal_move);
 
         if self.chess.is_legal(internal_move) {
             let zobrist_hash_update: Zobrist64 = match self.chess.update_zobrist_hash(
@@ -110,7 +129,7 @@ impl WasmChess {
                 self.chess = val;
 
                 let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
-                self.history.push(fen);
+                self.fen_history.push(fen);
 
                 return Ok(());
             }
@@ -188,7 +207,7 @@ impl WasmChess {
             }
         };
 
-        self.history.push(fen);
+        self.fen_history.push(fen);
 
         Ok(())
     }
@@ -199,14 +218,14 @@ impl WasmChess {
         fen.to_string()
     }
 
-    pub fn fen_at(&self, index: usize) -> Result<String, String> {
+    pub fn fen_at(&self, index: usize) -> String {
         if index >= self.history.len() {
-            return Err(format!("Index out of bounds: {}", index));
+            return Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal).to_string();
         }
 
-        let fen = &self.history[index];
+        let fen = &self.history[index].fen;
 
-        Ok(fen.to_string())
+        fen.to_string()
     }
 
     fn undo() {
@@ -252,15 +271,12 @@ impl WasmChess {
     }
 
     pub fn is_threefold_repetition(&self) -> bool {
-        let count = self.position_count.get(&self.hash);
-
-        if count.is_some() {
-            let count = count.unwrap();
-
-            return *count >= 3;
+        match self.position_count.get(&self.hash) {
+            Some(val) => {
+                return *val >= 3;
+            }
+            None => false,
         }
-
-        false
     }
 
     pub fn is_draw(&self) -> bool {
@@ -270,7 +286,19 @@ impl WasmChess {
             || self.is_threefold_repetition()
     }
 
-    fn history(&self) {
+    fn push_history_entry(&mut self, internal_move: Move) {
+        self.history.push(History {
+            internal_move,
+            fen: Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal),
+
+            move_number: self.fullmoves(),
+            half_moves: self.halfmoves(),
+            turn: self.chess.turn(),
+            position: self.chess.clone(),
+        });
+    }
+
+    pub fn history(&self) {
         todo!()
     }
 

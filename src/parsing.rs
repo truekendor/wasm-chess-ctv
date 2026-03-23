@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
+use wasm_bindgen::prelude::wasm_bindgen;
 
+#[wasm_bindgen]
 #[derive(Serialize, Deserialize)]
 pub struct ErrorWithValue {
-    pub moves: Vec<String>,
-    pub message: String,
+    moves: Vec<String>,
+    message: String,
 }
 
 /// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
@@ -49,11 +51,7 @@ pub fn uci_to_san(
             Err(err) => {
                 return Err(ErrorWithValue {
                     moves: san_moves_vec,
-                    message: format!(
-                        "Error: {}\nStarting FEN: {}",
-                        err.to_string(),
-                        fen.to_string()
-                    ),
+                    message: format!("{}\nStarting FEN: {}", err.to_string(), fen.to_string()),
                 });
             }
         };
@@ -129,11 +127,7 @@ pub fn uci_pv_to_san(
                 Err(err) => {
                     return Err(ErrorWithValue {
                         moves: san_moves_vec,
-                        message: format!(
-                            "Error: {}\nStarting FEN: {}",
-                            err.to_string(),
-                            fen.to_string()
-                        ),
+                        message: format!("{}\nStarting FEN: {}", err.to_string(), fen.to_string()),
                     });
                 }
             };
@@ -174,41 +168,34 @@ pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, String> {
     // try to return it
     // otherwise we know that there is a parsing error
     // because move is either in SAN format or illegal
-    match move_str.parse::<UciMove>() {
-        Ok(val) => match val.to_move(chess) {
+    if let Ok(move_uci) = move_str.parse::<UciMove>() {
+        match move_uci.to_move(chess) {
             Ok(valid_move) => return Ok(valid_move),
             Err(err) => {
                 return Err(format!(
-                    "{}\nMove: {}\nFEN before move: {}",
+                    "Error: {}\nMove: {}\nFEN before move: {}",
                     err.to_string(),
                     move_str,
                     Fen::from_position(chess, shakmaty::EnPassantMode::Legal).to_string()
                 ));
             }
-        },
-        Err(_) => {
-            // parsing error that we handle later
         }
-    };
+    }
 
-    // if we're here it means that the move is either
-    // illegal or in a SAN format
-    match move_str.parse::<San>() {
-        Ok(val) => match val.to_move(chess) {
+    // Try SAN format if UCI parsing failed or UCI move was invalid
+    if let Ok(move_san) = move_str.parse::<San>() {
+        match move_san.to_move(chess) {
             Ok(valid_move) => return Ok(valid_move),
             Err(err) => {
                 return Err(format!(
-                    "{}\nMove: {}\nFEN before move: {}",
+                    "Error: {}\nMove: {}\nFEN before move: {}",
                     err.to_string(),
                     move_str,
                     Fen::from_position(chess, shakmaty::EnPassantMode::Legal).to_string()
                 ));
             }
-        },
-        Err(_) => {
-            // parsing error that we handle later
         }
-    };
+    }
 
     Err(format!(
         "Failed to parse move «{}»\nOnly SAN and UCI formats are allowed",
