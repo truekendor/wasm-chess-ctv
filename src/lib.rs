@@ -1,16 +1,11 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{
-    Chess, Color, Move, Position,
-    fen::{self, Fen},
-    zobrist::Zobrist64,
-};
+use shakmaty::{Chess, Color, Move, Position, fen::Fen, zobrist::Zobrist64};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
-use web_sys::console;
 
-use crate::parsing::ErrorWithValue;
+use crate::parsing::MovesAndError;
 
 mod native_tests;
 mod parsing;
@@ -18,11 +13,18 @@ mod parsing;
 #[wasm_bindgen]
 struct WasmChess {
     chess: Chess,
-    // TODO remove
-    fen_history: Vec<Fen>,
     history: Vec<History>,
     hash: Zobrist64,
     position_count: HashMap<Zobrist64, i32>,
+}
+
+#[wasm_bindgen]
+#[derive(Serialize, Clone)]
+pub struct MoveVerbose {
+    from: String,
+    to: String,
+    san: String,
+    promotion: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -40,6 +42,8 @@ struct JSPreserveHeaders {
 
 struct History {
     internal_move: Move,
+    // maybe drop fen from history and just
+    // calculate it on the fly when needed
     fen: Fen,
     move_number: u32,
     half_moves: u32,
@@ -80,7 +84,6 @@ impl WasmChess {
         let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
 
         Ok(WasmChess {
-            fen_history: vec![fen],
             chess: chess,
             hash: zobrist_hash,
             position_count,
@@ -89,53 +92,28 @@ impl WasmChess {
     }
 
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
-        let internal_move = parsing::str_to_move(move_str, &self.chess);
-
-        let internal_move: Move = match internal_move {
-            Ok(val) => val,
-            Err(err) => return Err(err),
-        };
-
-        self.push_history_entry(internal_move);
+        let internal_move = parsing::str_to_move(move_str, &self.chess).map_err(|err| {
+            return err.to_string();
+        })?;
 
         if self.chess.is_legal(internal_move) {
-            let zobrist_hash_update: Zobrist64 = match self.chess.update_zobrist_hash(
-                self.hash,
-                internal_move,
-                shakmaty::EnPassantMode::Legal,
-            ) {
-                Some(val) => val,
-                None => {
-                    let zobrist_hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
-
-                    zobrist_hash
-                }
-            };
-
-            self.hash = zobrist_hash_update;
-
-            match self.position_count.get_mut(&zobrist_hash_update) {
-                Some(val) => {
-                    *val += 1;
-                }
-                None => {
-                    self.position_count.insert(zobrist_hash_update, 1);
-                }
-            }
+            self.push_history_entry(internal_move);
+        } else {
+            return Err(format!("Illegal move: {}\nFEN: {}", move_str, self.fen()));
         }
 
         match self.chess.clone().play(internal_move) {
             Ok(val) => {
                 self.chess = val;
 
-                let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
-                self.fen_history.push(fen);
+                self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+                *self.position_count.entry(self.hash).or_insert(0) += 1;
 
                 return Ok(());
             }
             Err(err) => {
                 return Err(format!(
-                    "Error: {}\nMove attempted: {}\nWith FEN: {}",
+                    "Error: {}\nMove attempted: {}\nFEN: {}",
                     err.to_string(),
                     move_str,
                     self.fen()
@@ -144,29 +122,47 @@ impl WasmChess {
         }
     }
 
-    fn make_move_from_obj(&mut self, move_obj: JsValue) -> Result<(), String> {
+    pub fn make_move_from_obj(&mut self, move_obj: JsValue) -> Result<(), String> {
         if !move_obj.is_object() {
-            return Err(format!("Input is not an object"));
+            return Err("Input is not an object".to_string());
         }
 
-        let move_obj: JSMoveObj = match serde_wasm_bindgen::from_value::<JSMoveObj>(move_obj) {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(format!("{}", err.to_string()));
-            }
-        };
+        let move_obj: JSMoveObj =
+            serde_wasm_bindgen::from_value(move_obj).map_err(|err| err.to_string())?;
 
-        // need to handle captures, castles, en passant
+        let mut uci = format!("{}{}", move_obj.from, move_obj.to);
 
-        todo!()
+        if let Some(promo) = move_obj.promotion {
+            uci.push_str(&promo.to_lowercase());
+        }
+
+        self.make_move(&uci)
     }
 
-    fn reset(&self) {
-        todo!()
+    pub fn reset(&mut self) {
+        let chess = Chess::default();
+        self.hash = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+
+        self.chess = chess;
+        self.history.clear();
+        self.position_count = HashMap::from([(self.hash, 1)]);
     }
 
-    fn clear() {
-        todo!()
+    // Idk what it is doing in chess.js but it is different from reset, so I am keeping it for now
+    pub fn clear(&mut self) {
+        let fen: Fen = "8/8/8/8/8/8/8/8 w - - 0 1"
+            .parse()
+            .expect("valid empty FEN");
+
+        let chess: Chess = fen
+            .clone()
+            .into_position(shakmaty::CastlingMode::Chess960)
+            .expect("valid position");
+
+        self.hash = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+        self.chess = chess;
+        self.history.clear();
+        self.position_count = HashMap::from([(self.hash, 1)]);
     }
 
     pub fn load(
@@ -176,38 +172,25 @@ impl WasmChess {
         // options: JsValue
     ) -> Result<(), String> {
         self.history.clear();
+        self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+        self.position_count = HashMap::from([(self.hash, 1)]);
 
-        // let options = match serde_wasm_bindgen::from_value::<JSPreserveHeaders>(options) {
-        //     Ok(val) => val,
-        //     Err(err) => {
-        //         // idk if we should return an error if option parsing went wrong
+        let fen: Fen = starting_fen.parse::<Fen>().map_err(|err| {
+            return format!(
+                "Error parsing fen string\nError message: {}\n«{}» is not a valid fen",
+                err, starting_fen
+            );
+        })?;
 
-        //         JSPreserveHeaders::default()
-        //     }
-        // };
-
-        let fen: Fen = match starting_fen.parse() {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(format!(
-                    "Error parsing fen string\nError message: {}\n«{}» is not a valid fen",
-                    err, starting_fen
-                ));
-            }
-        };
-
-        self.chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(format!(
+        self.chess = fen
+            .clone()
+            .into_position(shakmaty::CastlingMode::Chess960)
+            .map_err(|err| {
+                return format!(
                     "Error converting FEN into chess position\nError message: {}\nFEN: {}",
-                    err,
-                    fen.to_string()
-                ));
-            }
-        };
-
-        self.fen_history.push(fen);
+                    err, fen
+                );
+            })?;
 
         Ok(())
     }
@@ -218,25 +201,42 @@ impl WasmChess {
         fen.to_string()
     }
 
-    pub fn fen_at(&self, index: usize) -> String {
+    // as for now the api of this is strange since
+    // without any moves played it will return `None`
+    pub fn fen_at(&self, index: usize) -> Option<String> {
         if index >= self.history.len() {
-            return Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal).to_string();
+            return None;
         }
 
         let fen = &self.history[index].fen;
 
-        fen.to_string()
+        Some(fen.to_string())
     }
 
-    fn undo() {
-        todo!()
+    pub fn undo(&mut self) -> Result<String, String> {
+        let last = match self.history.pop() {
+            Some(h) => h,
+            None => return Err("No moves to undo".to_string()),
+        };
+
+        if let Some(count) = self.position_count.get_mut(&self.hash) {
+            *count -= 1;
+            if *count <= 0 {
+                self.position_count.remove(&self.hash);
+            }
+        }
+        self.chess = last.position;
+
+        self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+
+        self.position_count.entry(self.hash).or_insert(1);
+
+        Ok(last.internal_move.to_string())
     }
 
-    fn load_pgn() {
-        todo!()
-    }
-
-    fn get_headers() {
+    // TODO!!!!
+    pub fn legal_moves(&self) -> Vec<String> {
+        let aa = self.chess.legal_moves();
         todo!()
     }
 
@@ -286,6 +286,67 @@ impl WasmChess {
             || self.is_threefold_repetition()
     }
 
+    pub fn turn(&self) -> String {
+        match self.chess.turn() {
+            Color::White => "w".to_string(),
+            Color::Black => "b".to_string(),
+        }
+    }
+
+    // TODO implement board state as array of 64 squares not vector ?
+    // TODO make working piece to string parser
+    pub fn board(&self) -> Vec<String> {
+        // Square::ALL
+        //     .iter()
+        //     .map(|sq| self.chess.board().piece_at(*sq).map(|p| p.to_string()))
+        //     .collect()
+
+        todo!()
+    }
+
+    pub fn get(&self, square: String) -> Option<String> {
+        let sq: shakmaty::Square = square.parse().ok()?;
+        let piece = self.chess.board().piece_at(sq);
+        let char = match piece {
+            // TODO handle panic
+            Some(p) => Some(p.char()).unwrap(),
+            None => {
+                return None;
+            }
+        };
+
+        Some(char.to_string())
+    }
+
+    pub fn put(&mut self, piece: String, square: String) -> Result<(), String> {
+        todo!()
+    }
+
+    pub fn history(&self) -> Result<Vec<String>, String> {
+        Ok(self
+            .history
+            .iter()
+            .map(|h| h.internal_move.to_string())
+            .collect())
+    }
+
+    // TODO upgrade to return structs later???
+    // TODO -> Result<VEc<MoveObj>, String> or something like that
+    pub fn history_verbose(&self) -> Result<Vec<String>, String> {
+        Ok(self
+            .history
+            .iter()
+            .map(|h| {
+                format!(
+                    "move: {}, fen: {}, turn: {:?}",
+                    h.internal_move,
+                    h.fen.to_string(),
+                    h.turn
+                )
+            })
+            .collect())
+    }
+
     fn push_history_entry(&mut self, internal_move: Move) {
         self.history.push(History {
             internal_move,
@@ -298,7 +359,20 @@ impl WasmChess {
         });
     }
 
-    pub fn history(&self) {
+    /// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
+    pub fn uci_to_san(
+        &self,
+        uci_moves: Vec<String>,
+        starting_fen: Option<String>,
+    ) -> MovesAndError {
+        parsing::uci_to_san(uci_moves, starting_fen)
+    }
+
+    fn load_pgn() {
+        todo!()
+    }
+
+    fn get_headers() {
         todo!()
     }
 
@@ -308,53 +382,5 @@ impl WasmChess {
 
     fn set_comment() {
         todo!()
-    }
-
-    /// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
-    pub fn uci_to_san(
-        &self,
-        uci_moves: Vec<String>,
-        starting_fen: Option<String>,
-    ) -> Result<Vec<String>, JsValue> {
-        let san_moves_vec: Vec<String> =
-            parsing::uci_to_san(uci_moves, starting_fen).map_err(|err| {
-                return self.convert_error_to_js_value(err);
-            })?;
-
-        Ok(san_moves_vec)
-    }
-
-    /// converts Vec<string> of a  PV's into Vec of SAN moves
-    /// PV is a string of UCI moves separated by a whitespace char, like "e2e4 e7e6 b1c3"
-    pub fn uci_pv_to_san(
-        &self,
-        uci_moves: Vec<String>,
-        starting_fen: Option<String>,
-    ) -> Result<Vec<String>, JsValue> {
-        let san_moves_vec: Vec<String> =
-            parsing::uci_pv_to_san(uci_moves, starting_fen).map_err(|err| {
-                return self.convert_error_to_js_value(err);
-            })?;
-
-        Ok(san_moves_vec)
-    }
-
-    fn convert_error_to_js_value(&self, err: ErrorWithValue) -> JsValue {
-        let error_with_value = match serde_wasm_bindgen::to_value(&err) {
-            Ok(val) => val,
-            Err(err) => {
-                console::log_1(
-                    &format!(
-                        "Failed to convert error with value to JsValue: {}",
-                        err.to_string()
-                    )
-                    .into(),
-                );
-
-                return JsValue::null();
-            }
-        };
-
-        return error_with_value;
     }
 }
