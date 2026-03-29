@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Color, Move, Position, fen::Fen, zobrist::Zobrist64};
+use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, zobrist::Zobrist64};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -276,15 +276,20 @@ impl WasmChess {
         }
     }
 
-    // TODO implement board state as array of 64 squares not vector ?
-    // TODO make working piece to string parser
     pub fn board(&self) -> Vec<String> {
-        // Square::ALL
-        //     .iter()
-        //     .map(|sq| self.chess.board().piece_at(*sq).map(|p| p.to_string()))
-        //     .collect()
+        let result: Vec<String> = Square::ALL
+            .iter()
+            .map(|sq| {
+                let piece = self.chess.board().piece_at(*sq);
 
-        todo!()
+                match piece {
+                    Some(p) => p.char().to_string(),
+                    None => " ".to_string(),
+                }
+            })
+            .collect();
+
+        result
     }
 
     pub fn get(&self, square: String) -> Option<String> {
