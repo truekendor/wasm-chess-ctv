@@ -4,11 +4,6 @@ pub mod fen_tests {
     use std::usize;
 
     #[test]
-    fn aaa() {
-        let wasm_chess = WasmChess::new(None).unwrap();
-    }
-
-    #[test]
     fn test_new_game_custom_fen() {
         let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
         let chess = WasmChess::new(Some(fen.to_string())).unwrap();
