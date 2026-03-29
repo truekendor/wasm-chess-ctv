@@ -7,8 +7,8 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::parsing::MovesAndError;
 
-mod native_tests;
 mod parsing;
+mod tests;
 
 #[wasm_bindgen]
 struct WasmChess {
@@ -54,7 +54,7 @@ struct History {
 #[wasm_bindgen]
 impl WasmChess {
     pub fn new(fen: Option<String>) -> Result<WasmChess, String> {
-        let starting_fen = fen.unwrap_or(
+        let starting_fen: String = fen.unwrap_or(
             Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string(),
         );
 
@@ -148,23 +148,6 @@ impl WasmChess {
         self.position_count = HashMap::from([(self.hash, 1)]);
     }
 
-    // Idk what it is doing in chess.js but it is different from reset, so I am keeping it for now
-    pub fn clear(&mut self) {
-        let fen: Fen = "8/8/8/8/8/8/8/8 w - - 0 1"
-            .parse()
-            .expect("valid empty FEN");
-
-        let chess: Chess = fen
-            .clone()
-            .into_position(shakmaty::CastlingMode::Chess960)
-            .expect("valid position");
-
-        self.hash = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
-        self.chess = chess;
-        self.history.clear();
-        self.position_count = HashMap::from([(self.hash, 1)]);
-    }
-
     pub fn load(
         &mut self,
         starting_fen: String,
@@ -196,7 +179,7 @@ impl WasmChess {
     }
 
     pub fn fen(&self) -> String {
-        let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
+        let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Always);
 
         fen.to_string()
     }
