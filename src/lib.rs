@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, zobrist::Zobrist64};
+use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist::Zobrist64};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -306,15 +306,31 @@ impl WasmChess {
         Some(char.to_string())
     }
 
-    pub fn put(&mut self, piece: String, square: String) -> Result<(), String> {
+    fn put(&mut self, piece: String, square: String) -> Result<(), String> {
         todo!()
     }
 
-    pub fn history(&self) -> Result<Vec<String>, String> {
+    pub fn history_san(&self) -> Result<Vec<String>, String> {
         Ok(self
             .history
             .iter()
-            .map(|h| h.internal_move.to_string())
+            .map(|history| {
+                let san_move = San::from_move(&history.position, history.internal_move);
+
+                san_move.to_string()
+            })
+            .collect())
+    }
+
+    pub fn history_uci(&self) -> Result<Vec<String>, String> {
+        Ok(self
+            .history
+            .iter()
+            .map(|h| {
+                let uci_move = h.internal_move.to_uci(shakmaty::CastlingMode::Chess960);
+
+                uci_move.to_string()
+            })
             .collect())
     }
 
@@ -324,12 +340,12 @@ impl WasmChess {
         Ok(self
             .history
             .iter()
-            .map(|h| {
+            .map(|history| {
                 format!(
                     "move: {}, fen: {}, turn: {:?}",
-                    h.internal_move,
-                    h.fen.to_string(),
-                    h.turn
+                    history.internal_move,
+                    history.fen.to_string(),
+                    history.turn
                 )
             })
             .collect())

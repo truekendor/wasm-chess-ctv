@@ -1,7 +1,5 @@
 #[cfg(test)]
 pub mod test {
-    use std::usize;
-
     use crate::WasmChess;
 
     #[test]
@@ -83,25 +81,46 @@ pub mod test {
     }
 
     #[test]
-    fn test_history_recording() {
+    fn test_history_san_recording() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(chess.history().unwrap().len(), 0);
+        assert_eq!(chess.history_san().unwrap().len(), 0);
 
         chess.make_move("e2e4").unwrap();
         chess.make_move("e7e5").unwrap();
         chess.make_move("g1f3").unwrap();
 
-        let history = chess.history().unwrap();
-        // TODO BRUH the move format is insane
-        // todo will change to SAN
+        let history = chess.history_san().unwrap();
+
         assert_eq!(history.len(), 3);
-        assert_eq!(history[0], "e2-e4");
-        assert_eq!(history[1], "e7-e5");
-        assert_eq!(history[2], "Ng1-f3");
+        assert_eq!(history[0], "e4");
+        assert_eq!(history[1], "e5");
+        assert_eq!(history[2], "Nf3");
 
         chess.undo().unwrap();
-        let history_after_undo = chess.history().unwrap();
+        let history_after_undo = chess.history_san().unwrap();
+        assert_eq!(history_after_undo.len(), 2);
+    }
+
+    #[test]
+    fn test_history_uci_recording() {
+        let mut chess = WasmChess::new(None).unwrap();
+
+        assert_eq!(chess.history_san().unwrap().len(), 0);
+
+        chess.make_move("e2e4").unwrap();
+        chess.make_move("e7e5").unwrap();
+        chess.make_move("g1f3").unwrap();
+
+        let history = chess.history_uci().unwrap();
+
+        assert_eq!(history.len(), 3);
+        assert_eq!(history[0], "e2e4");
+        assert_eq!(history[1], "e7e5");
+        assert_eq!(history[2], "g1f3");
+
+        chess.undo().unwrap();
+        let history_after_undo = chess.history_san().unwrap();
         assert_eq!(history_after_undo.len(), 2);
     }
 
@@ -173,7 +192,7 @@ pub mod test {
             chess.fen(),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
-        assert_eq!(chess.history().unwrap().len(), 0);
+        assert_eq!(chess.history_san().unwrap().len(), 0);
     }
 
     #[test]
