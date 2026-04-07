@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist::Zobrist64};
+use shakmaty::{
+    Chess, Color, Move, Position, Square, fen::Fen, san::San, uci::UciMove, zobrist::Zobrist64,
+};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::parsing::MovesAndError;
+use crate::{get_legal_moves::StrictMove, parsing::MovesAndError};
 
+mod get_legal_moves;
 mod parsing;
 mod tests;
 
@@ -16,15 +19,6 @@ struct WasmChess {
     history: Vec<History>,
     hash: Zobrist64,
     position_count: HashMap<Zobrist64, i32>,
-}
-
-#[wasm_bindgen]
-#[derive(Serialize, Clone)]
-pub struct MoveVerbose {
-    from: String,
-    to: String,
-    san: String,
-    promotion: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -217,10 +211,20 @@ impl WasmChess {
         Ok(last.internal_move.to_string())
     }
 
-    // TODO!!!!
-    pub fn legal_moves(&self) -> Vec<String> {
-        let aa = self.chess.legal_moves();
+    pub fn legal_moves_uci(&self) -> Vec<String> {
+        get_legal_moves::uci(&self.chess)
+    }
+
+    pub fn legal_moves_san(&self) -> Vec<String> {
+        get_legal_moves::san(&self.chess)
+    }
+
+    fn legal_moves_strict(&self) -> Vec<StrictMove> {
         todo!()
+    }
+
+    pub fn perft(&self, depth: usize) -> u64 {
+        shakmaty::perft(&self.chess, depth as u32)
     }
 
     pub fn fullmoves(&self) -> u32 {
@@ -336,7 +340,7 @@ impl WasmChess {
 
     // TODO upgrade to return structs later???
     // TODO -> Result<VEc<MoveObj>, String> or something like that
-    pub fn history_verbose(&self) -> Result<Vec<String>, String> {
+    fn history_verbose(&self) -> Result<Vec<String>, String> {
         Ok(self
             .history
             .iter()
@@ -363,13 +367,22 @@ impl WasmChess {
         });
     }
 
-    /// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
+    /// converts Vec of UCI moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
     pub fn uci_to_san(
         &self,
         uci_moves: Vec<String>,
         starting_fen: Option<String>,
     ) -> MovesAndError {
         parsing::uci_to_san(uci_moves, starting_fen)
+    }
+
+    /// converts Vec of SAN moves `Vec<["e4", "e5", "Nf3", ...]>`, into Vec of UCI moves
+    pub fn san_to_uci(
+        &self,
+        san_moves: Vec<String>,
+        starting_fen: Option<String>,
+    ) -> MovesAndError {
+        parsing::san_to_uci(san_moves, starting_fen)
     }
 
     fn load_pgn() {

@@ -109,6 +109,73 @@ pub fn uci_to_san(uci_moves: Vec<String>, starting_fen: Option<String>) -> Moves
     }
 }
 
+pub fn san_to_uci(san_moves: Vec<String>, starting_fen: Option<String>) -> MovesAndError {
+    let starting_fen = starting_fen.unwrap_or_else(|| {
+        Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
+    });
+
+    let mut uci_moves_vec: Vec<String> = vec![];
+
+    let fen: Fen = match starting_fen.parse() {
+        Ok(val) => val,
+        Err(err) => {
+            return MovesAndError {
+                moves: uci_moves_vec,
+                message: Some(err.to_string()),
+            };
+        }
+    };
+
+    let mut chess_pos: Chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
+        Ok(val) => val,
+        Err(err) => {
+            return MovesAndError {
+                moves: uci_moves_vec,
+                message: Some(format!(
+                    "Error converting FEN into position: {}\nStarting FEN: {}",
+                    err,
+                    fen.to_string()
+                )),
+            };
+        }
+    };
+
+    for san_move_str in san_moves {
+        let internal_move: Move = match str_to_move(&san_move_str, &chess_pos) {
+            Ok(val) => val,
+            Err(err) => {
+                return MovesAndError {
+                    moves: uci_moves_vec,
+                    message: Some(err.to_string()),
+                };
+            }
+        };
+
+        let uci_move = UciMove::from_move(internal_move, shakmaty::CastlingMode::Chess960);
+
+        chess_pos = match chess_pos.play(internal_move) {
+            Ok(val) => val,
+            Err(err) => {
+                return MovesAndError {
+                    moves: uci_moves_vec,
+                    message: Some(format!(
+                        "{}\nAttempted to play: Fen: {}",
+                        err.to_string(),
+                        fen.to_string()
+                    )),
+                };
+            }
+        };
+
+        uci_moves_vec.push(uci_move.to_string());
+    }
+
+    MovesAndError {
+        moves: uci_moves_vec,
+        message: None,
+    }
+}
+
 pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError> {
     // if move is in a UCI format we immediately
     // try to return it
