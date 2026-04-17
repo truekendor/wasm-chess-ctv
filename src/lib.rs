@@ -1,13 +1,11 @@
-use std::{collections::HashMap, result};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist::Zobrist64};
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::{
-    get_legal_moves::StrictMove, parsing::MovesAndError, pgn_loader::pgn_reader::parse_pgn,
-};
+use crate::{parsing::MovesAndError, pgn_loader::pgn_reader::parse_pgn};
 
 mod get_legal_moves;
 mod parsing;
@@ -48,6 +46,7 @@ struct History {
 
 #[wasm_bindgen]
 impl WasmChess {
+    #[wasm_bindgen(constructor)]
     pub fn new(fen: Option<String>) -> Result<WasmChess, String> {
         let starting_fen: String = fen.unwrap_or(
             Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string(),
@@ -123,12 +122,13 @@ impl WasmChess {
         self.make_move(&uci)
     }
 
-    // TODO redo/remove this function.
-    pub fn reset_to(&mut self, _fen: Option<String>) {
-        let chess = Chess::default();
-        self.hash = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+    /// resets to default starting position
+    ///
+    /// TODO: need to double-check what is does in chess.js
+    pub fn reset(&mut self) {
+        self.chess = Chess::default();
+        self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
-        self.chess = chess;
         self.history.clear();
         self.position_count = HashMap::from([(self.hash, 1)]);
     }
@@ -140,8 +140,6 @@ impl WasmChess {
         // options: JsValue
     ) -> Result<(), String> {
         self.history.clear();
-        self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
-        self.position_count = HashMap::from([(self.hash, 1)]);
 
         let fen: Fen = starting_fen.parse::<Fen>().map_err(|err| {
             return format!(
@@ -159,6 +157,9 @@ impl WasmChess {
                     err, fen
                 );
             })?;
+
+        self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
+        self.position_count = HashMap::from([(self.hash, 1)]);
 
         Ok(())
     }
@@ -213,9 +214,12 @@ impl WasmChess {
         get_legal_moves::san(&self.chess)
     }
 
-    fn legal_moves_strict(&self) -> Vec<StrictMove> {
-        todo!()
-    }
+    // fn legal_moves_strict(&self) ->
+    // Vec<StrictMove>
+
+    //  {
+    //     todo!()
+    // }
 
     pub fn perft(&self, depth: usize) -> u64 {
         shakmaty::perft(&self.chess, depth as u32)

@@ -1,9 +1,11 @@
 use core::fmt;
 
+use serde::Serialize;
 use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
+#[derive(Serialize)]
 pub struct MovesAndError {
     moves: Vec<String>,
     message: Option<String>,

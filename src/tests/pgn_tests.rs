@@ -3,18 +3,7 @@
 
 #[cfg(test)]
 mod pgn_test {
-    use pgn_reader::Reader;
-
-    use crate::{WasmChess, pgn_loader::pgn_reader::PGNHeaders};
-
-    use std::{
-        fs::{self},
-        io,
-    };
-
-    #[test]
-    fn headers() {
-        let pgn = r#"[Event "F/S Return Match"]
+    static TEST_PGN_1: &str = r#"[Event "F/S Return Match"]
 [Site "Belgrade, Serbia JUG"]
 [Date "1992.11.04"]
 [Round "29"]
@@ -31,13 +20,29 @@ hxg5 29.b3 Ke6 30.a3 Kd6 31.axb4 cxb4 32.Ra5 Nd5 33.f3 Bc8 34.Kf2 Bf5
 35.Ra7 g6 36.Ra6+ Kc5 37.Ke1 Nf4 38.g3 Nxh3 39.Kd2 Kb5 40.Rd6 Kc5 41.Ra6
 Nf2 42.g4 Bd3 43.Re6 1/2-1/2"#;
 
-        let mut reader = Reader::new(io::Cursor::new(pgn));
-        let mut pgn_headers = PGNHeaders::default();
-        reader.read_game(&mut pgn_headers).unwrap();
+    use pgn_reader::Reader;
 
-        pgn_headers.headers.iter().for_each(|el| {
-            println!("{} {}", el.0, el.1);
-        });
+    use crate::{WasmChess, pgn_loader::pgn_reader::PGNHeaders};
+
+    use std::{
+        fs::{self},
+        io,
+    };
+
+    #[test]
+    // TODO: make an actual test
+    fn headers() {
+        let mut reader = Reader::new(io::Cursor::new(TEST_PGN_1));
+        let mut pgn_parser = PGNHeaders::default();
+        reader.read_game(&mut pgn_parser).unwrap();
+
+        assert_eq!(*pgn_parser.headers.get("Round").unwrap(), "29".to_owned());
+        assert!(pgn_parser.headers.contains_key("Site"));
+        assert!(pgn_parser.headers.contains_key("White"));
+        assert!(pgn_parser.headers.contains_key("Black"));
+        assert_eq!(pgn_parser.move_list.len(), 85);
+
+        assert!(!pgn_parser.headers.contains_key("Variant"));
     }
 
     #[test]
@@ -51,8 +56,8 @@ Nf2 42.g4 Bd3 43.Re6 1/2-1/2"#;
     }
 
     #[test]
-    fn wasm_chess() {
-        let pgn = fs::read("./src/pgn_loader/pgn_list/1.pgn").unwrap();
+    fn pgn_loads_correctly() {
+        let pgn = fs::read("./src/tests/pgn/1.pgn").unwrap();
 
         let mut reader: Reader<io::Cursor<Vec<u8>>> = Reader::new(io::Cursor::new(pgn));
         let mut pgn_headers = PGNHeaders::default();
@@ -75,18 +80,10 @@ Nf2 42.g4 Bd3 43.Re6 1/2-1/2"#;
             "nqbrkbrn/pppppp1p/6p1/8/7P/8/PPPPPPP1/BBNRNKRQ w KQkq - 0 2"
         );
 
+        // TODO:
         wasm_chess.history_san().unwrap().iter().for_each(|m| {
-            println!("inner move: {}", m);
+            // println!("inner move: {}", m);
         });
-    }
-
-    #[test]
-    fn pgn_works_on_correct_turn() {
-        let pgn = r#"
-[White "LichessAborter"]
-[Black "PoorSap"]
-
-*"#;
     }
 
     #[test]
@@ -124,5 +121,12 @@ Nf2 42.g4 Bd3 43.Re6 1/2-1/2"#;
         wasm_chess.load_pgn(pgn.to_owned()).unwrap();
         let turn = wasm_chess.turn();
         assert_eq!(turn, "w");
+    }
+
+    // #[test]
+    // TODO:
+    fn remove_header_works() {
+        let mut wasm_chess = WasmChess::new(None).unwrap();
+        wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
     }
 }

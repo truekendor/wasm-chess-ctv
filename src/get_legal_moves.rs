@@ -2,15 +2,15 @@ use shakmaty::{Chess, Color, Piece, Position, Square, san::San, uci::UciMove};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 // TODO
-#[wasm_bindgen]
-pub struct StrictMove {
-    from: Square,
-    to: Square,
-    color: Color,
-    piece: Piece,
-    captured: Option<Piece>,
-    promotion: Option<Piece>,
-}
+// #[wasm_bindgen]
+// pub struct StrictMove {
+//     from: Square,
+//     to: Square,
+//     color: Color,
+//     piece: Piece,
+//     captured: Option<Piece>,
+//     promotion: Option<Piece>,
+// }
 
 pub fn uci(chess: &Chess) -> Vec<String> {
     let legal_moves: Vec<String> = chess
@@ -39,6 +39,6 @@ pub fn san(chess: &Chess) -> Vec<String> {
     legal_moves
 }
 
-pub fn strict(chess: &Chess) -> Vec<StrictMove> {
-    todo!()
-}
+// pub fn strict(chess: &Chess) -> Vec<StrictMove> {
+//     todo!()
+// }

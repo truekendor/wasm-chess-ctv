@@ -3,7 +3,7 @@ use std::{collections::HashMap, io, ops::ControlFlow};
 
 use pgn_reader::{RawTag, Reader, SanPlus, Visitor};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PGNHeaders {
     pub headers: HashMap<String, String>,
     pub comments: Vec<String>,
