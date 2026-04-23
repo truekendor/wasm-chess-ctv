@@ -4,14 +4,14 @@ use std::{collections::HashMap, io, ops::ControlFlow};
 use pgn_reader::{RawTag, Reader, SanPlus, Visitor};
 
 #[derive(Debug, Default, Clone)]
-pub struct PGNHeaders {
+pub struct PGNResult {
     pub headers: HashMap<String, String>,
     pub comments: Vec<String>,
     pub move_list: Vec<String>,
     pub starting_fen: Fen,
 }
 
-impl Visitor for PGNHeaders {
+impl Visitor for PGNResult {
     type Tags = ();
     type Output = ();
     type Movetext = ();
@@ -37,7 +37,7 @@ impl Visitor for PGNHeaders {
                     return ControlFlow::Break(());
                 }
             };
-            let pos: Chess = match fen.clone().into_position(CastlingMode::Chess960) {
+            match fen.clone().into_position::<Chess>(CastlingMode::Chess960) {
                 Ok(pos) => {
                     self.starting_fen = fen;
                     pos
@@ -94,9 +94,9 @@ impl Visitor for PGNHeaders {
     }
 }
 
-pub fn parse_pgn(pgn: String) -> Result<PGNHeaders, String> {
+pub fn parse_pgn(pgn: String) -> Result<PGNResult, String> {
     let mut reader = Reader::new(io::Cursor::new(pgn));
-    let mut pgn_headers = PGNHeaders::default();
+    let mut pgn_headers = PGNResult::default();
 
     match reader.read_game(&mut pgn_headers) {
         Ok(_) => {

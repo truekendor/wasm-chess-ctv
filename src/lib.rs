@@ -5,33 +5,10 @@ use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist
 
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::{parsing::MovesAndError, pgn_loader::pgn_reader::parse_pgn};
+use crate::helpers::pgn_reader::PGNResult;
 
-mod get_legal_moves;
-mod parsing;
-mod pgn_loader;
+mod helpers;
 mod tests;
-
-#[wasm_bindgen]
-struct WasmChess {
-    chess: Chess,
-    history: Vec<History>,
-    hash: Zobrist64,
-    position_count: HashMap<Zobrist64, i32>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct JSMoveObj {
-    from: String,
-    to: String,
-    promotion: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-struct JSPreserveHeaders {
-    skip_validation: Option<bool>,
-    preserve_headers: Option<bool>,
-}
 
 struct History {
     internal_move: Move,
@@ -42,6 +19,16 @@ struct History {
     half_moves: u32,
     turn: Color,
     position: Chess,
+}
+
+#[wasm_bindgen]
+struct WasmChess {
+    chess: Chess,
+    history: Vec<History>,
+    hash: Zobrist64,
+    position_count: HashMap<Zobrist64, i32>,
+    // TODO: rename
+    pgn_result: Option<PGNResult>,
 }
 
 #[wasm_bindgen]
@@ -82,14 +69,16 @@ impl WasmChess {
             hash: zobrist_hash,
             position_count,
             history: vec![],
+            pgn_result: None,
         })
     }
 
     #[wasm_bindgen(js_name = "move")]
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
-        let internal_move = parsing::str_to_move(move_str, &self.chess).map_err(|err| {
-            return err.to_string();
-        })?;
+        let internal_move =
+            helpers::parsing::str_to_move(move_str, &self.chess).map_err(|err| {
+                return err.to_string();
+            })?;
 
         if !self.chess.is_legal(internal_move) {
             return Err(format!("Illegal move: {}\nFEN: {}", move_str, self.fen()));
@@ -106,6 +95,13 @@ impl WasmChess {
     }
 
     fn make_move_from_obj(&mut self, move_obj: JsValue) -> Result<(), String> {
+        #[derive(Serialize, Deserialize)]
+        struct JSMoveObj {
+            from: String,
+            to: String,
+            promotion: Option<String>,
+        }
+
         if !move_obj.is_object() {
             return Err("Input is not an object".to_string());
         }
@@ -206,12 +202,12 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "legalMovesUCI")]
     pub fn legal_moves_uci(&self) -> Vec<String> {
-        get_legal_moves::uci(&self.chess)
+        helpers::legal_moves::uci(&self.chess)
     }
 
     #[wasm_bindgen(js_name = "legalMovesSAN")]
     pub fn legal_moves_san(&self) -> Vec<String> {
-        get_legal_moves::san(&self.chess)
+        helpers::legal_moves::san(&self.chess)
     }
 
     // fn legal_moves_strict(&self) ->
@@ -315,34 +311,36 @@ impl WasmChess {
         Some(char.to_string())
     }
 
+    fn attackers(&self, square: String) -> Vec<String> {
+        todo!()
+    }
+
     fn put(&mut self, piece: String, square: String) -> Result<(), String> {
         todo!()
     }
 
     #[wasm_bindgen(js_name = "historySAN")]
-    pub fn history_san(&self) -> Result<Vec<String>, String> {
-        Ok(self
-            .history
+    pub fn history_san(&self) -> Vec<String> {
+        self.history
             .iter()
             .map(|history| {
                 let san_move = San::from_move(&history.position, history.internal_move);
 
                 san_move.to_string()
             })
-            .collect())
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "historyUCI")]
-    pub fn history_uci(&self) -> Result<Vec<String>, String> {
-        Ok(self
-            .history
+    pub fn history_uci(&self) -> Vec<String> {
+        self.history
             .iter()
             .map(|h| {
                 let uci_move = h.internal_move.to_uci(shakmaty::CastlingMode::Chess960);
 
                 uci_move.to_string()
             })
-            .collect())
+            .collect()
     }
 
     // TODO upgrade to return structs later???
@@ -380,8 +378,8 @@ impl WasmChess {
         &self,
         uci_moves: Vec<String>,
         starting_fen: Option<String>,
-    ) -> MovesAndError {
-        parsing::uci_to_san(uci_moves, starting_fen)
+    ) -> helpers::parsing::MovesAndError {
+        helpers::parsing::uci_to_san(uci_moves, starting_fen)
     }
 
     /// converts Vec of SAN moves `Vec<["e4", "e5", "Nf3", ...]>`, into Vec of UCI moves
@@ -390,8 +388,8 @@ impl WasmChess {
         &self,
         san_moves: Vec<String>,
         starting_fen: Option<String>,
-    ) -> MovesAndError {
-        parsing::san_to_uci(san_moves, starting_fen)
+    ) -> helpers::parsing::MovesAndError {
+        helpers::parsing::san_to_uci(san_moves, starting_fen)
     }
 
     fn set_fen(&mut self, fen: Fen) -> Result<(), String> {
@@ -407,26 +405,28 @@ impl WasmChess {
         };
 
         let zobrist_hash: Zobrist64 = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
-        let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
+        self.position_count.clear();
+        self.position_count.insert(zobrist_hash, 1);
 
-        self.position_count = position_count;
         self.hash = zobrist_hash;
         self.chess = chess;
+        self.history.clear();
 
         Ok(())
     }
 
-    fn load_pgn(&mut self, pgn: String) -> Result<(), String> {
-        let pgn_headers = parse_pgn(pgn);
+    #[wasm_bindgen(js_name = "loadPgn")]
+    pub fn load_pgn(&mut self, pgn: String) -> Result<(), String> {
+        let pgn_headers = helpers::pgn_reader::parse_pgn(pgn);
 
         if let Err(pgn_error) = pgn_headers {
-            return Err(format!("something something {}", pgn_error));
+            return Err(format!("Error loading pgn: {}", pgn_error));
         }
 
-        let pgn_headers = pgn_headers.unwrap();
+        let pgn_result = pgn_headers.unwrap();
 
-        let starting_fen = pgn_headers.starting_fen;
-        let moves_list = pgn_headers.move_list.iter();
+        let starting_fen = pgn_result.starting_fen.clone();
+        let moves_list = pgn_result.move_list.iter();
 
         self.set_fen(starting_fen)?;
 
@@ -434,14 +434,41 @@ impl WasmChess {
             self.make_move(san_move)?;
         }
 
+        self.pgn_result = Some(pgn_result);
+
         return Ok(());
     }
 
-    fn get_headers() {
-        todo!()
+    #[wasm_bindgen(js_name = "getHeaders")]
+    pub fn get_headers(&self) -> Option<JsValue> {
+        if self.pgn_result.is_none() {
+            return None;
+        }
+
+        let headers = self.pgn_result.clone().unwrap().headers;
+
+        match serde_wasm_bindgen::to_value(&headers) {
+            Ok(val) => Some(val),
+            // we cannot recover from this I think so just return undefined
+            Err(err) => {
+                web_sys::console::log_1(&format!("{}", err).into());
+
+                None
+            }
+        }
     }
 
-    fn get_comments() {
+    #[wasm_bindgen(js_name = "getComments")]
+    pub fn get_comments(&self) -> Option<Vec<String>> {
+        if self.pgn_result.is_none() {
+            return None;
+        }
+
+        let comments = &self.pgn_result.as_ref().unwrap().comments;
+        return Some(comments.to_vec());
+    }
+
+    fn remove_header(&self) {
         todo!()
     }
 

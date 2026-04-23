@@ -86,13 +86,13 @@ pub mod test {
     fn test_history_san_recording() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(chess.history_san().unwrap().len(), 0);
+        assert_eq!(chess.history_san().len(), 0);
 
         chess.make_move("e2e4").unwrap();
         chess.make_move("e7e5").unwrap();
         chess.make_move("g1f3").unwrap();
 
-        let history = chess.history_san().unwrap();
+        let history = chess.history_san();
 
         assert_eq!(history.len(), 3);
         assert_eq!(history[0], "e4");
@@ -100,7 +100,7 @@ pub mod test {
         assert_eq!(history[2], "Nf3");
 
         chess.undo().unwrap();
-        let history_after_undo = chess.history_san().unwrap();
+        let history_after_undo = chess.history_san();
         assert_eq!(history_after_undo.len(), 2);
     }
 
@@ -108,13 +108,13 @@ pub mod test {
     fn test_history_uci_recording() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(chess.history_san().unwrap().len(), 0);
+        assert_eq!(chess.history_san().len(), 0);
 
         chess.make_move("e2e4").unwrap();
         chess.make_move("e7e5").unwrap();
         chess.make_move("g1f3").unwrap();
 
-        let history = chess.history_uci().unwrap();
+        let history = chess.history_uci();
 
         assert_eq!(history.len(), 3);
         assert_eq!(history[0], "e2e4");
@@ -122,7 +122,7 @@ pub mod test {
         assert_eq!(history[2], "g1f3");
 
         chess.undo().unwrap();
-        let history_after_undo = chess.history_san().unwrap();
+        let history_after_undo = chess.history_san();
         assert_eq!(history_after_undo.len(), 2);
     }
 
@@ -194,7 +194,7 @@ pub mod test {
             chess.fen(),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
-        assert_eq!(chess.history_san().unwrap().len(), 0);
+        assert_eq!(chess.history_san().len(), 0);
     }
 
     #[test]
@@ -237,6 +237,4 @@ pub mod test {
 
         assert!(result.is_err());
     }
-
-
 }

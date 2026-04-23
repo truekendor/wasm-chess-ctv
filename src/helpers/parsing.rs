@@ -13,7 +13,6 @@ pub struct MovesAndError {
 
 #[wasm_bindgen]
 impl MovesAndError {
-    #[wasm_bindgen(getter)]
     pub fn moves(&self) -> Vec<String> {
         self.moves.clone()
     }
@@ -179,8 +178,9 @@ pub fn san_to_uci(san_moves: Vec<String>, starting_fen: Option<String>) -> Moves
 }
 
 pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError> {
-    // if move is in a UCI format we immediately
-    // try to return it
+    // if move is in a UCI format we
+    // try to return it immediately
+    //
     // otherwise we know that there is a parsing error
     // because move is either in SAN format or illegal
     if let Ok(move_uci) = move_str.parse::<UciMove>() {
