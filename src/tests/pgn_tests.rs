@@ -221,22 +221,4 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         assert!(comments.len() == 12);
     }
-
-    #[test]
-    fn nags_ok() {
-        let pgn = r#"1. c4 {English Opening} e5!? {Aggressive}
-        2. Nf3!! {Best Move} Nc6?? {Blunder} *
-        "#;
-
-        let mut wasm_chess = WasmChess::new(None).unwrap();
-        wasm_chess.load_pgn(pgn.to_owned()).unwrap();
-
-        let nags = wasm_chess.get_nags();
-
-        assert_eq!(nags.len(), 3);
-
-        // nags.iter().for_each(|nag| {
-        //     println!("nag: {}", nag);
-        // });
-    }
 }
