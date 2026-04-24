@@ -55,12 +55,13 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     use pgn_reader::Reader;
     use wasm_bindgen_test::wasm_bindgen_test;
 
-    use crate::{WasmChess, helpers::pgn_reader::PGNResult};
+    use crate::{WasmChess, helpers::pgn_reader::PGNResult, tests::native_tests::test};
 
     use std::{
         collections::HashMap,
         fs::{self},
         io,
+        ops::Deref,
     };
 
     #[test]
@@ -157,20 +158,89 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         assert_eq!(turn, "w");
     }
 
-    // #[test]
-    // TODO:
+    #[test]
     fn remove_header_works() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
         wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
+
+        // Check before removal
+        assert!(
+            wasm_chess
+                .pgn_result
+                .as_mut()
+                .unwrap()
+                .headers
+                .contains_key("White")
+        );
+
+        wasm_chess.remove_header("White".to_owned());
+
+        // Check after removal
+        assert!(
+            !wasm_chess
+                .pgn_result
+                .as_mut()
+                .unwrap()
+                .headers
+                .contains_key("White")
+        );
+    }
+
+    // #[test]
+    // TODO: doesn't work because we cannot test any function that returns `JsValue`
+    // in this case: `set_header`
+    fn add_header_works() {
+        let mut wasm_chess = WasmChess::new(None).unwrap();
+        wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
+
+        let arbitrary_tag = "MyTag";
+
+        assert!(
+            !wasm_chess
+                .pgn_result
+                .as_mut()
+                .unwrap()
+                .headers
+                .contains_key(arbitrary_tag)
+        );
+
+        let _ = wasm_chess.set_header(arbitrary_tag.to_owned(), "MyValue".to_owned());
+
+        assert!(
+            wasm_chess
+                .pgn_result
+                .as_mut()
+                .unwrap()
+                .headers
+                .contains_key(arbitrary_tag)
+        );
     }
 
     #[test]
-    fn comments_work_from_pgn() {
+    fn comments_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
         let _ = wasm_chess.load_pgn(TEST_PGN_2.to_owned()).unwrap();
         let comments = wasm_chess.get_comments().unwrap();
 
         assert!(comments.len() == 12);
+    }
+
+    // #[test]
+    fn nags_ok() {
+        let pgn = r#"1. c4 {English Opening} e5!? {Aggressive}
+        2. Nf3!! {Best Move} Nc6?? {Blunder} *
+        "#;
+
+        let mut wasm_chess = WasmChess::new(None).unwrap();
+        wasm_chess.load_pgn(pgn.to_owned()).unwrap();
+
+        let nags = wasm_chess.get_nags();
+
+        assert_eq!(nags.len(), 3);
+
+        nags.iter().for_each(|nag| {
+            println!("nag: {}", nag);
+        });
     }
 }

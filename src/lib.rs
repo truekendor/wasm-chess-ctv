@@ -1,14 +1,33 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, default, str::FromStr};
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist::Zobrist64};
+use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, uci, zobrist::Zobrist64};
 
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
 
 use crate::helpers::pgn_reader::PGNResult;
 
 mod helpers;
 mod tests;
+
+#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+struct MoveObject {
+    from: String,
+    to: String,
+    #[tsify(optional)]
+    promotion: Option<String>,
+}
+
+#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+enum AttackedBySide {
+    w,
+    b,
+    White,
+    Black,
+    Both,
+}
 
 struct History {
     internal_move: Move,
@@ -29,6 +48,7 @@ struct WasmChess {
     position_count: HashMap<Zobrist64, i32>,
     // TODO: rename
     pgn_result: Option<PGNResult>,
+    seven_tag_roster: HashMap<String, String>,
 }
 
 #[wasm_bindgen]
@@ -64,12 +84,24 @@ impl WasmChess {
 
         let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
 
+        // TODO do we need this??
+        let seven_tag_roster: HashMap<String, String> = HashMap::from([
+            ("Event".to_owned(), "?".to_owned()),
+            ("Site".to_owned(), "?".to_owned()),
+            ("Date".to_owned(), "????.??.??".to_owned()),
+            ("Round".to_owned(), "?".to_owned()),
+            ("White".to_owned(), "?".to_owned()),
+            ("Black".to_owned(), "?".to_owned()),
+            ("Result".to_owned(), "*".to_owned()),
+        ]);
+
         Ok(WasmChess {
             chess: chess,
             hash: zobrist_hash,
             position_count,
             history: vec![],
             pgn_result: None,
+            seven_tag_roster,
         })
     }
 
@@ -94,28 +126,18 @@ impl WasmChess {
         return Ok(());
     }
 
-    fn make_move_from_obj(&mut self, move_obj: JsValue) -> Result<(), String> {
-        #[derive(Serialize, Deserialize)]
-        struct JSMoveObj {
-            from: String,
-            to: String,
-            promotion: Option<String>,
-        }
+    #[wasm_bindgen(js_name = "moveFromObj")]
+    pub fn make_move_from_obj(&mut self, move_obj: MoveObject) -> Result<(), String> {
+        let mut uci_str = format!("{}{}", move_obj.from, move_obj.to);
 
-        if !move_obj.is_object() {
-            return Err("Input is not an object".to_string());
-        }
+        match move_obj.promotion {
+            Some(val) => {
+                uci_str.push_str(&val.to_lowercase());
+            }
+            None => (),
+        };
 
-        let move_obj: JSMoveObj =
-            serde_wasm_bindgen::from_value(move_obj).map_err(|err| err.to_string())?;
-
-        let mut uci = format!("{}{}", move_obj.from, move_obj.to);
-
-        if let Some(promo) = move_obj.promotion {
-            uci.push_str(&promo.to_lowercase());
-        }
-
-        self.make_move(&uci)
+        self.make_move(&uci_str)
     }
 
     /// resets to default starting position
@@ -168,6 +190,7 @@ impl WasmChess {
 
     // as for now the api of this is strange since
     // without any moves played it will return `None`
+    // maybe it is an OK behavior
     #[wasm_bindgen(js_name = "fenAt")]
     pub fn fen_at(&self, index: usize) -> Option<String> {
         if index >= self.history.len() {
@@ -212,7 +235,6 @@ impl WasmChess {
 
     // fn legal_moves_strict(&self) ->
     // Vec<StrictMove>
-
     //  {
     //     todo!()
     // }
@@ -297,6 +319,10 @@ impl WasmChess {
         result
     }
 
+    fn ascii(&self) -> String {
+        todo!()
+    }
+
     pub fn get(&self, square: String) -> Option<String> {
         let sq: shakmaty::Square = square.parse().ok()?;
         let piece = self.chess.board().piece_at(sq);
@@ -311,8 +337,68 @@ impl WasmChess {
         Some(char.to_string())
     }
 
-    fn attackers(&self, square: String) -> Vec<String> {
-        todo!()
+    pub fn attackers(
+        &self,
+        square: String,
+        attacked_by_side: Option<AttackedBySide>,
+    ) -> Result<Vec<String>, String> {
+        let square = Square::from_str(&square);
+
+        if let Err(err) = square {
+            return Err(err.to_string());
+        }
+
+        let square = square.unwrap();
+
+        let mut squares: Vec<Square> = vec![];
+
+        let mut w_attackers: Vec<Square> = self
+            .chess
+            .board()
+            .attacks_to(square, Color::Black, self.chess.board().white())
+            .into_iter()
+            .map(|square| {
+                return square;
+            })
+            .collect();
+
+        let mut b_attackers: Vec<Square> = self
+            .chess
+            .board()
+            .attacks_to(square, Color::Black, self.chess.board().black())
+            .into_iter()
+            .map(|square| {
+                return square;
+            })
+            .collect();
+
+        if attacked_by_side.is_none() {
+            match self.chess.turn() {
+                Color::White => {
+                    squares.append(&mut w_attackers);
+                }
+                Color::Black => {
+                    squares.append(&mut b_attackers);
+                }
+            }
+        } else {
+            match attacked_by_side.unwrap() {
+                AttackedBySide::White | AttackedBySide::w => {
+                    squares.append(&mut w_attackers);
+                }
+                AttackedBySide::b | AttackedBySide::Black => {
+                    squares.append(&mut b_attackers);
+                }
+                AttackedBySide::Both => {
+                    squares.append(&mut w_attackers);
+                    squares.append(&mut b_attackers);
+                }
+            }
+        }
+
+        let string_result: Vec<String> = squares.iter().map(|el| el.to_string()).collect();
+
+        return Ok(string_result);
     }
 
     fn put(&mut self, piece: String, square: String) -> Result<(), String> {
@@ -440,20 +526,20 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "getHeaders")]
-    pub fn get_headers(&self) -> Option<JsValue> {
+    pub fn get_headers(&self) -> JsValue {
         if self.pgn_result.is_none() {
-            return None;
+            return js_sys::Map::new().into();
         }
 
         let headers = self.pgn_result.clone().unwrap().headers;
 
         match serde_wasm_bindgen::to_value(&headers) {
-            Ok(val) => Some(val),
+            Ok(val) => val,
             // we cannot recover from this I think so just return undefined
             Err(err) => {
                 web_sys::console::log_1(&format!("{}", err).into());
 
-                None
+                return js_sys::Map::new().into();
             }
         }
     }
@@ -468,11 +554,48 @@ impl WasmChess {
         return Some(comments.to_vec());
     }
 
-    fn remove_header(&self) {
-        todo!()
+    #[wasm_bindgen(js_name = "removeHeader")]
+    pub fn remove_header(&mut self, key: String) -> bool {
+        if self.pgn_result.is_some() {
+            let val = self.pgn_result.as_mut().unwrap().headers.remove(&key);
+
+            return val.is_some();
+        }
+
+        return false;
     }
 
     fn set_comment() {
         todo!()
+    }
+
+    #[wasm_bindgen(js_name = "setHeader")]
+    pub fn set_header(&mut self, key: String, value: String) -> JsValue {
+        if self.pgn_result.is_none() {
+            self.pgn_result = Some(PGNResult::default());
+        };
+
+        match self.pgn_result.as_mut() {
+            Some(val) => {
+                println!("Value is some");
+
+                val.headers = HashMap::new();
+                val.headers.insert(key, value);
+            }
+            None => {
+                println!("Value is none")
+            }
+        }
+
+        self.get_headers()
+    }
+
+    // TODO this is for testing, delete later
+    fn get_nags(&mut self) -> &Vec<String> {
+        return &self.pgn_result.as_mut().unwrap().nag_list;
+    }
+
+    pub fn abcd(&self) -> js_sys::Map {
+        return js_sys::Map::new();
     }
 }

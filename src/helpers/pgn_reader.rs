@@ -8,6 +8,7 @@ pub struct PGNResult {
     pub headers: HashMap<String, String>,
     pub comments: Vec<String>,
     pub move_list: Vec<String>,
+    pub nag_list: Vec<String>,
     pub starting_fen: Fen,
 }
 
@@ -76,7 +77,7 @@ impl Visitor for PGNResult {
 
     fn san(
         &mut self,
-        movetext: &mut Self::Movetext,
+        _movetext: &mut Self::Movetext,
         san_plus: SanPlus,
     ) -> ControlFlow<Self::Output> {
         let san_move = san_plus.san.to_string();
@@ -86,6 +87,17 @@ impl Visitor for PGNResult {
     }
 
     fn begin_movetext(&mut self, _tags: Self::Tags) -> ControlFlow<Self::Output, Self::Movetext> {
+        ControlFlow::Continue(())
+    }
+
+    fn nag(
+        &mut self,
+        movetext: &mut Self::Movetext,
+        nag: pgn_reader::Nag,
+    ) -> ControlFlow<Self::Output> {
+        let nag = nag.to_string();
+        self.nag_list.push(nag);
+
         ControlFlow::Continue(())
     }
 

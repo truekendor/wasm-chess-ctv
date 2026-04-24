@@ -1,26 +1,14 @@
 use core::fmt;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[wasm_bindgen]
-#[derive(Serialize)]
+#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct MovesAndError {
     moves: Vec<String>,
     message: Option<String>,
-}
-
-#[wasm_bindgen]
-impl MovesAndError {
-    pub fn moves(&self) -> Vec<String> {
-        self.moves.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Option<String> {
-        self.message.clone()
-    }
 }
 
 #[derive(Clone, Debug)]
