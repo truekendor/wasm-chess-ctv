@@ -355,7 +355,7 @@ impl WasmChess {
         let mut w_attackers: Vec<Square> = self
             .chess
             .board()
-            .attacks_to(square, Color::Black, self.chess.board().white())
+            .attacks_to(square, Color::White, self.chess.board().white())
             .into_iter()
             .map(|square| {
                 return square;
@@ -593,9 +593,5 @@ impl WasmChess {
     // TODO this is for testing, delete later
     fn get_nags(&mut self) -> &Vec<String> {
         return &self.pgn_result.as_mut().unwrap().nag_list;
-    }
-
-    pub fn abcd(&self) -> js_sys::Map {
-        return js_sys::Map::new();
     }
 }
