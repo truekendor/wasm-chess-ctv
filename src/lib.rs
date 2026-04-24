@@ -1,6 +1,8 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, fmt::format, str::FromStr};
 
-use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist::Zobrist64};
+use shakmaty::{
+    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
+};
 
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -301,17 +303,51 @@ impl WasmChess {
         result
     }
 
-    // TODO:
-    fn ascii(&self) -> String {
-        todo!()
+    pub fn ascii(&self) -> String {
+        let border: &str = "   +------------------------+\n";
+        let letters: &str = "     a  b  c  d  e  f  g  h\n";
+        let mut ascii_str = String::new();
+
+        ascii_str.push_str(border);
+
+        for rank in (0..8).rev() {
+            ascii_str.push_str(&format!(" {} |", rank + 1));
+
+            for file in 0..8 {
+                let sq = Square::from_coords(
+                    shakmaty::File::new(file as u32),
+                    shakmaty::Rank::new(rank as u32),
+                );
+
+                let piece = self.chess.board().piece_at(sq);
+
+                match piece {
+                    Some(p) => {
+                        let symbol = p.char();
+                        ascii_str.push(' ');
+                        ascii_str.push(symbol);
+                        ascii_str.push(' ');
+                    }
+                    None => {
+                        ascii_str.push_str(" . ");
+                    }
+                }
+            }
+
+            ascii_str.push_str(&format!("| {}\n", rank + 1));
+        }
+
+        ascii_str.push_str(border);
+        ascii_str.push_str(letters);
+
+        ascii_str
     }
 
     pub fn get(&self, square: String) -> Option<String> {
         let sq: shakmaty::Square = square.parse().ok()?;
         let piece = self.chess.board().piece_at(sq);
         let char = match piece {
-            // TODO handle panic
-            Some(p) => Some(p.char()).unwrap(),
+            Some(p) => p.char(),
             None => {
                 return None;
             }
@@ -385,6 +421,51 @@ impl WasmChess {
     }
 
     fn put(&mut self, piece: String, square: String) -> Result<(), String> {
+        let piece = piece.trim();
+
+        if piece.len() > 1 {
+            return Err(format!("Error: unexpected piece type: {}", piece));
+        }
+
+        let sq: Square = square
+            .parse()
+            .map_err(|err| format!("Invalid square: {}. Error: {}", square, err))?;
+
+        // Validate piece type and color
+        let piece_char = piece
+            .chars()
+            .next()
+            .ok_or_else(|| format!("Empty piece string"))?;
+
+        let piece_type = match Piece::from_char(piece_char) {
+            Some(p) => p,
+            None => {
+                return Err(format!(
+                    "Error parsing piece char: \"{}\" into a valid piece type",
+                    piece
+                ));
+            }
+        };
+
+        let mut board = self.chess.board().clone();
+        board.set_piece_at(sq, piece_type);
+        let fen: Fen = board.board_fen().to_string().parse().unwrap();
+
+        self.set_fen(fen).map_err(|err| {
+            return err;
+        })?;
+
+        Ok(())
+    }
+
+    fn remove(&mut self, sq: String) -> Result<Option<String>, String> {
+        let sq: Square = sq
+            .parse()
+            .map_err(|err| format!("Invalid square: {}. Error: {}", sq, err))?;
+
+        let mut board = self.chess.board().clone();
+        board.remove_piece_at(sq);
+
         todo!()
     }
 
@@ -480,8 +561,9 @@ impl WasmChess {
         self.pgn_result = None;
 
         self.hash = zobrist_hash;
-        self.chess = chess;
         self.history.clear();
+
+        self.chess = chess;
 
         Ok(())
     }
