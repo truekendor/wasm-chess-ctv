@@ -334,7 +334,8 @@ impl WasmChess {
                 }
             }
 
-            ascii_str.push_str(&format!("| {}\n", rank + 1));
+            // ascii_str.push_str(&format!("| {}\n", rank + 1));
+            ascii_str.push_str(&format!("|\n"));
         }
 
         ascii_str.push_str(border);
