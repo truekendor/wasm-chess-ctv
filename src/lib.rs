@@ -1,37 +1,16 @@
 use std::{collections::HashMap, str::FromStr};
 
-use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Color, Move, Position, Square, fen::Fen, san::San, zobrist::Zobrist64};
 
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::helpers::pgn_reader::PGNResult;
+use crate::helpers::{
+    pgn_reader::PGNResult,
+    rs_js_structs::{AttackedBySide, HeadersObj, MoveObject, MoveVerbose},
+};
 
 mod helpers;
 mod tests;
-
-#[derive(tsify::Tsify, Serialize, Deserialize)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-struct MoveObject {
-    from: String,
-    to: String,
-    #[tsify(optional)]
-    promotion: Option<String>,
-}
-
-#[derive(tsify::Tsify, Serialize, Deserialize)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-enum AttackedBySide {
-    W,
-    B,
-    Both,
-}
-
-#[derive(tsify::Tsify, Serialize, Deserialize)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-struct HeadersObj {
-    headers_data: HashMap<String, String>,
-}
 
 struct History {
     internal_move: Move,
@@ -238,11 +217,9 @@ impl WasmChess {
         helpers::legal_moves::san(&self.chess)
     }
 
-    // fn legal_moves_strict(&self) ->
-    // Vec<StrictMove>
-    //  {
-    //     todo!()
-    // }
+    fn legal_moves_verbose(&self) -> Vec<MoveVerbose> {
+        todo!()
+    }
 
     pub fn perft(&self, depth: usize) -> u64 {
         shakmaty::perft(&self.chess, depth as u32)
@@ -436,7 +413,7 @@ impl WasmChess {
     }
 
     // TODO upgrade to return structs later???
-    // TODO -> Result<VEc<MoveObj>, String> or something like that
+    // TODO -> Result<Vec<MoveObj>, String> or something like that
     fn history_verbose(&self) -> Result<Vec<String>, String> {
         Ok(self
             .history
@@ -586,10 +563,5 @@ impl WasmChess {
         }
 
         self.get_headers()
-    }
-
-    // TODO this is for testing, delete later
-    fn get_nags(&mut self) -> &Vec<String> {
-        return &self.pgn_result.as_mut().unwrap().nag_list;
     }
 }
