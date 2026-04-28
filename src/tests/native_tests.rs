@@ -63,19 +63,7 @@ pub mod test {
 
     // #[test]
     fn test_make_move_from_object() {
-        todo!("add serde kson to dependencies")
-        // let mut chess = WasmChess::new(None).unwrap();
-
-        // let move_obj = json!({
-        //     "from": "e2",
-        //     "to": "e4"
-        // });
-
-        // assert!(chess.make_move_from_obj(move_obj.into()).is_ok());
-        // assert_eq!(
-        //     chess.fen(),
-        //     "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        // );
+        todo!()
     }
 
     fn test_make_move_with_promotion() {
@@ -126,17 +114,23 @@ pub mod test {
         assert_eq!(history_after_undo.len(), 2);
     }
 
-    // #[test]
+    #[test]
+    // TODO
     fn test_history_verbose() {
-        // let mut chess = WasmChess::new(None).unwrap();
+        let mut chess = WasmChess::new(None).unwrap();
 
-        // chess.make_move("e2e4").unwrap();
+        chess.make_move("e4").unwrap();
+        chess.make_move("e5").unwrap();
+        chess.make_move("Nf3").unwrap();
+        chess.make_move("Nc6").unwrap();
+        chess.make_move("d4").unwrap();
+        chess.make_move("Nxd4").unwrap();
 
-        // let verbose = chess.history_verbose().unwrap();
-        // assert_eq!(verbose.len(), 1);
-        // assert!(verbose[0].contains("e2-e4"));
-        // assert!(verbose[0].contains("fen:"));
-        // assert!(verbose[0].contains("turn:"));
+        let verbose = chess.history_verbose().map_err(|err| {
+            println!("Error getting verbose history: {}", err);
+        });
+
+        verbose.iter().for_each(|el| println!("{:#?}", el));
     }
 
     #[test]

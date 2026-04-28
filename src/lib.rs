@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::format, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 use shakmaty::{
     Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
@@ -8,12 +8,13 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::helpers::{
     pgn_reader::PGNResult,
-    rs_js_structs::{AttackedBySide, HeadersObj, MoveObject, MoveVerbose},
+    tsify::{AttackedBySide, HeadersObj, MoveObject, MoveVerbose},
 };
 
 mod helpers;
 mod tests;
 
+#[derive(Clone)]
 struct History {
     internal_move: Move,
     // maybe drop fen from history and just
@@ -219,6 +220,7 @@ impl WasmChess {
         helpers::legal_moves::san(&self.chess)
     }
 
+    // #[wasm_bindgen(js_name = "legalMovesVerbose")]
     fn legal_moves_verbose(&self) -> Vec<MoveVerbose> {
         todo!()
     }
@@ -459,13 +461,14 @@ impl WasmChess {
         Ok(())
     }
 
+    // TODO:
     fn remove(&mut self, sq: String) -> Result<Option<String>, String> {
         let sq: Square = sq
             .parse()
             .map_err(|err| format!("Invalid square: {}. Error: {}", sq, err))?;
 
         let mut board = self.chess.board().clone();
-        board.remove_piece_at(sq);
+        let result = board.remove_piece_at(sq);
 
         todo!()
     }
@@ -494,21 +497,82 @@ impl WasmChess {
             .collect()
     }
 
-    // TODO upgrade to return structs later???
-    // TODO -> Result<Vec<MoveObj>, String> or something like that
-    fn history_verbose(&self) -> Result<Vec<String>, String> {
-        Ok(self
+    #[wasm_bindgen(js_name = "historyVerbose")]
+    pub fn history_verbose(&self) -> Result<Vec<MoveVerbose>, String> {
+        if self.history.len() == 0 {
+            return Ok(vec![]);
+        }
+
+        let first_entry = &self.history[0];
+
+        let mut chess: Chess = first_entry
+            .fen
+            .clone()
+            .into_position(shakmaty::CastlingMode::Chess960)
+            .map_err(|err| {
+                return format!(
+                    "Error converting FEN into chess position\nError message: {}\nFEN: {}",
+                    err,
+                    first_entry.fen.to_string()
+                );
+            })?;
+
+        let moves_verbose: Result<Vec<MoveVerbose>, String> = self
             .history
             .iter()
-            .map(|history| {
-                format!(
-                    "move: {}, fen: {}, turn: {:?}",
-                    history.internal_move,
-                    history.fen.to_string(),
-                    history.turn
-                )
+            .rev()
+            .map(|history_entry| -> Result<MoveVerbose, String> {
+                let internal_move = history_entry.internal_move;
+
+                let promotion: Option<String> = match internal_move.promotion() {
+                    Some(val) => Some(val.char().to_string()),
+                    None => None,
+                };
+
+                let captured_piece: Option<String> = match internal_move.capture() {
+                    Some(val) => Some(val.char().to_string()),
+                    None => None,
+                };
+
+                let san_move = San::from_move(&history_entry.position, internal_move);
+                chess.play_unchecked(internal_move);
+
+                let fen_after = Fen::from_position(&chess, shakmaty::EnPassantMode::Legal);
+                let color_shorthand = match history_entry.turn {
+                    Color::White => "W",
+                    Color::Black => "B",
+                };
+
+                let from_sq = internal_move.from();
+
+                if from_sq.is_none() {
+                    return Err("unable to get square info from move".to_string());
+                }
+
+                Ok(MoveVerbose {
+                    from: from_sq.unwrap().to_string(),
+                    to: internal_move.to().to_string(),
+                    promotion,
+                    lan: internal_move
+                        .to_uci(shakmaty::CastlingMode::Chess960)
+                        .to_string(),
+                    san: san_move.to_string(),
+                    piece: internal_move.role().char().to_string(),
+                    captured: captured_piece,
+
+                    color: color_shorthand.to_owned(),
+                    before: history_entry.fen.to_string(),
+                    after: fen_after.to_string(),
+                })
             })
-            .collect())
+            .rev()
+            .collect();
+
+        if moves_verbose.is_err() {
+            return Err(moves_verbose.err().unwrap());
+        }
+
+        Ok(moves_verbose.unwrap())
     }
 
     fn push_history_entry(&mut self, internal_move: Move) {
