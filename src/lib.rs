@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 
 use shakmaty::{
-    Board, Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
+     Chess, Color, Move,  Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -234,6 +234,11 @@ impl WasmChess {
         helpers::legal_moves::san(&self.chess)
     }
 
+    // ! API discrepancy
+    // TODO: change it later?
+    // this version of verbose moves is a bit different from chess.js since it
+    // marks en passant square only if it is a legal move,
+    // while chess.js always marks en passant square if it is available
     #[wasm_bindgen(js_name = "legalMovesVerbose")]
     pub fn legal_moves_verbose(&self) -> Vec<MoveVerbose> {
         helpers::legal_moves::verbose(&self.chess)
