@@ -1,14 +1,17 @@
 use std::{collections::HashMap, str::FromStr};
 
 use shakmaty::{
-     Chess, Color, Move,  Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
+    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::helpers::{
     pgn_reader::PGNResult,
-    tsify::{AttackedBySide, CommentsObj, HeadersObj, MoveObject, MoveVerbose},
+    tsify::{
+        AttackedBySide, CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveObject, MoveVerbose,
+        SquareColor, SquareStr,
+    },
 };
 
 mod helpers;
@@ -248,6 +251,12 @@ impl WasmChess {
         shakmaty::perft(&self.chess, depth as u32)
     }
 
+    #[wasm_bindgen(js_name = "moveNumber")]
+    /// same as wasm_chess.fullmoves()
+    pub fn move_number(&self) -> u32 {
+        return self.fullmoves();
+    }
+
     pub fn fullmoves(&self) -> u32 {
         let move_number = &self.chess.fullmoves();
 
@@ -256,6 +265,138 @@ impl WasmChess {
 
     pub fn halfmoves(&self) -> u32 {
         self.chess.halfmoves()
+    }
+
+    // TODO:
+    pub fn length(&self) -> u32 {
+        return self.history.len() as u32;
+    }
+
+    // TODO: custom CTV function?
+    // #[wasm_bindgen(js_name = "turnAt")]
+    fn turn_at(&self, index: usize) -> u32 {
+        if index as u32 >= self.length() {
+            return 0;
+        }
+
+        return 0;
+    }
+
+    // TODO: custom CTV function?
+    // TODO: change to Result<MoveObject, String?>
+    // #[wasm_bindgen(js_name = "moveAt")]
+    fn move_at(&self, index: usize) -> Option<MoveObject> {
+        // TODO: index == 0 is fine
+        if index == 0 || index as u32 >= self.length() {
+            return None;
+        }
+
+        let internal_move = &self.history[index].internal_move;
+        let promotion = internal_move.promotion().map(|m| m.char().to_string());
+
+        let from = match internal_move.from() {
+            Some(val) => val,
+            None => {
+                return None;
+            }
+        };
+
+        let from = from.to_string().to_lowercase().parse::<SquareStr>();
+        let to = internal_move
+            .to()
+            .to_string()
+            .to_lowercase()
+            .parse::<SquareStr>();
+
+        let from = match from {
+            Ok(val) => val,
+            Err(_err) => {
+                return None;
+            }
+        };
+
+        let to = match to {
+            Ok(val) => val,
+            Err(_err) => {
+                return None;
+            }
+        };
+
+        Some(MoveObject {
+            from,
+            to,
+            promotion,
+        })
+    }
+
+    #[wasm_bindgen(js_name = "squareColor")]
+    pub fn square_color(&self, square: SquareStr) -> Option<SquareColor> {
+        let sq_string = square.to_string().to_lowercase();
+
+        let square = match Square::from_ascii(sq_string.as_bytes()) {
+            Ok(val) => val,
+            Err(err) => {
+                return None;
+            }
+        };
+
+        let square_color = match square.is_light() {
+            true => SquareColor::Light,
+            false => SquareColor::Dark,
+        };
+
+        Some(square_color)
+    }
+
+    #[wasm_bindgen(js_name = "findPiece")]
+    pub fn find_piece(&self, piece: String) -> Result<Vec<String>, String> {
+        let mut squares_with_piece: Vec<String> = vec![];
+
+        let piece = piece.trim();
+        if piece.len() > 1 {
+            return Err(format!("Error: unexpected piece type: {}", piece));
+        }
+
+        // Validate piece type and color
+        let piece_char = piece
+            .chars()
+            .next()
+            .ok_or_else(|| format!("Empty piece string"))?;
+
+        let piece_type = match Piece::from_char(piece_char) {
+            Some(p) => p,
+            None => {
+                return Err(format!(
+                    "Error parsing piece char: \"{}\" into a valid piece type",
+                    piece
+                ));
+            }
+        };
+
+        self.chess.board().iter().for_each(|(sq, p)| {
+            if p == piece_type {
+                squares_with_piece.push(sq.to_string());
+            }
+        });
+
+        Ok(squares_with_piece)
+    }
+
+    pub fn hash(&self) -> u64 {
+        return self.hash.0;
+    }
+
+    // TODO: add tsfify types like "w" | "b"
+    // #[wasm_bindgen(js_name = "getCastlingRights")]
+    fn get_castling_rights(&self, color_char: ColorChar) -> Result<CastlingObj, String> {
+        let color_char = match color_char {
+            ColorChar::W => Color::White,
+            ColorChar::B => Color::Black,
+        };
+
+        let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
+
+        todo!()
     }
 
     #[wasm_bindgen(js_name = "isGameOver")]
@@ -378,12 +519,13 @@ impl WasmChess {
         Some(char.to_string())
     }
 
+    // TODO: TEST bevcause we derive bunh of bs with strum
     pub fn attackers(
         &self,
-        square: String,
+        square: SquareStr,
         attacked_by_side: Option<AttackedBySide>,
     ) -> Result<Vec<String>, String> {
-        let square = Square::from_str(&square);
+        let square = Square::from_str(&square.to_string().to_lowercase());
 
         if let Err(err) = square {
             return Err(err.to_string());
