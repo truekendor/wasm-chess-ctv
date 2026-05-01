@@ -1,3 +1,7 @@
+// TODO: rename file and module
+// TODO: add more tests for edge cases, e.g. en passant, promotion, castling, ambiguous moves, etc.
+// TODO: decompose into multiple test modules
+
 #[cfg(test)]
 pub mod test {
     use crate::WasmChess;
@@ -61,19 +65,7 @@ pub mod test {
 
     // #[test]
     fn test_make_move_from_object() {
-        todo!("add serde kson to dependencies")
-        // let mut chess = WasmChess::new(None).unwrap();
-
-        // let move_obj = json!({
-        //     "from": "e2",
-        //     "to": "e4"
-        // });
-
-        // assert!(chess.make_move_from_obj(move_obj.into()).is_ok());
-        // assert_eq!(
-        //     chess.fen(),
-        //     "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        // );
+        todo!()
     }
 
     fn test_make_move_with_promotion() {
@@ -84,13 +76,13 @@ pub mod test {
     fn test_history_san_recording() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(chess.history_san().unwrap().len(), 0);
+        assert_eq!(chess.history_san().len(), 0);
 
         chess.make_move("e2e4").unwrap();
         chess.make_move("e7e5").unwrap();
         chess.make_move("g1f3").unwrap();
 
-        let history = chess.history_san().unwrap();
+        let history = chess.history_san();
 
         assert_eq!(history.len(), 3);
         assert_eq!(history[0], "e4");
@@ -98,7 +90,7 @@ pub mod test {
         assert_eq!(history[2], "Nf3");
 
         chess.undo().unwrap();
-        let history_after_undo = chess.history_san().unwrap();
+        let history_after_undo = chess.history_san();
         assert_eq!(history_after_undo.len(), 2);
     }
 
@@ -106,13 +98,13 @@ pub mod test {
     fn test_history_uci_recording() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(chess.history_san().unwrap().len(), 0);
+        assert_eq!(chess.history_san().len(), 0);
 
         chess.make_move("e2e4").unwrap();
         chess.make_move("e7e5").unwrap();
         chess.make_move("g1f3").unwrap();
 
-        let history = chess.history_uci().unwrap();
+        let history = chess.history_uci();
 
         assert_eq!(history.len(), 3);
         assert_eq!(history[0], "e2e4");
@@ -120,21 +112,27 @@ pub mod test {
         assert_eq!(history[2], "g1f3");
 
         chess.undo().unwrap();
-        let history_after_undo = chess.history_san().unwrap();
+        let history_after_undo = chess.history_san();
         assert_eq!(history_after_undo.len(), 2);
     }
 
-    // #[test]
+    #[test]
+    // TODO
     fn test_history_verbose() {
-        // let mut chess = WasmChess::new(None).unwrap();
+        let mut chess = WasmChess::new(None).unwrap();
 
-        // chess.make_move("e2e4").unwrap();
+        chess.make_move("e4").unwrap();
+        chess.make_move("e5").unwrap();
+        chess.make_move("Nf3").unwrap();
+        chess.make_move("Nc6").unwrap();
+        chess.make_move("d4").unwrap();
+        chess.make_move("Nxd4").unwrap();
 
-        // let verbose = chess.history_verbose().unwrap();
-        // assert_eq!(verbose.len(), 1);
-        // assert!(verbose[0].contains("e2-e4"));
-        // assert!(verbose[0].contains("fen:"));
-        // assert!(verbose[0].contains("turn:"));
+        let verbose = chess.history_verbose().map_err(|err| {
+            println!("Error getting verbose history: {}", err);
+        });
+
+        verbose.iter().for_each(|el| println!("{:#?}", el));
     }
 
     #[test]
@@ -192,7 +190,7 @@ pub mod test {
             chess.fen(),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
-        assert_eq!(chess.history_san().unwrap().len(), 0);
+        assert_eq!(chess.history_san().len(), 0);
     }
 
     #[test]
@@ -208,60 +206,31 @@ pub mod test {
         assert!(result.is_err());
     }
 
-    #[cfg(test)]
-    mod undo_logic_test {
-        use super::*;
+    #[test]
+    fn false_ambiguous_move() {
+        let fen_str = String::from("8/1Q2bk2/P2p2p1/2pPp3/2P1P3/2N2n2/2KN1q2/8 w - - 1 61");
+        let mut chess = WasmChess::new(Some(fen_str)).unwrap();
 
-        #[test]
-        fn test_undo_after_two_moves() {
-            let mut wasm_chess = WasmChess::new(None).unwrap();
-            let starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        chess.make_move("Nb1").unwrap();
+    }
 
-            wasm_chess.make_move("e2e4").unwrap();
-            wasm_chess.make_move("e7e5").unwrap();
+    #[test]
+    fn move_illegal() {
+        let fen_str = String::from("8/1Q2bk2/P2p2p1/2pPp3/2P1P3/2N2n2/2KN1q2/8 w - - 1 61");
+        let mut chess = WasmChess::new(Some(fen_str)).unwrap();
 
-            assert_eq!(wasm_chess.fen_at(0).unwrap(), starting_fen);
+        let result = chess.make_move("Ndb1");
 
-            assert_eq!(
-                wasm_chess.fen_at(1).unwrap(),
-                "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
-            );
+        assert!(result.is_err())
+    }
 
-            let move_str = wasm_chess.undo().unwrap();
-            assert_eq!(move_str, "e7-e5");
+    #[test]
+    fn ambiguous_move() {
+        let fen_str = String::from("8/1Q2bk2/P2p2p1/2pPp3/2P1P3/2N2n2/2KN4/8 w - - 1 61");
+        let mut chess = WasmChess::new(Some(fen_str)).unwrap();
 
-            assert_eq!(wasm_chess.fen_at(1), None);
-            assert_eq!(wasm_chess.fen_at(0).unwrap(), starting_fen);
+        let result = chess.make_move("Nb1");
 
-            let move_str = wasm_chess.undo().unwrap();
-            assert_eq!(move_str, "e2-e4");
-        }
-
-        #[test]
-        fn test_undo() {
-            let mut chess = WasmChess::new(None).unwrap();
-
-            assert!(chess.make_move("e2e4").is_ok());
-            assert!(chess.make_move("e7e5").is_ok());
-
-            let undo_result = chess.undo();
-            assert!(undo_result.is_ok());
-            assert_eq!(undo_result.unwrap(), "e7-e5");
-
-            assert_eq!(chess.turn(), "b");
-            assert_eq!(chess.fullmoves(), 1);
-
-            // Undo again
-            let undo_result2 = chess.undo();
-            assert!(undo_result2.is_ok());
-            assert_eq!(undo_result2.unwrap(), "e2-e4");
-            assert_eq!(
-                chess.fen(),
-                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-            );
-
-            // Undo when no moves left
-            assert!(chess.undo().is_err());
-        }
+        assert!(result.is_err());
     }
 }

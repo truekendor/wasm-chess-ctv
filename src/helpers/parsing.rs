@@ -1,26 +1,8 @@
 use core::fmt;
 
+use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
 use wasm_bindgen::prelude::wasm_bindgen;
-
-#[wasm_bindgen]
-pub struct MovesAndError {
-    moves: Vec<String>,
-    message: Option<String>,
-}
-
-#[wasm_bindgen]
-impl MovesAndError {
-    #[wasm_bindgen(getter)]
-    pub fn moves(&self) -> Vec<String> {
-        self.moves.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Option<String> {
-        self.message.clone()
-    }
-}
 
 #[derive(Clone, Debug)]
 pub enum MoveParseError {
@@ -38,11 +20,18 @@ impl fmt::Display for MoveParseError {
         }
     }
 }
-
 impl std::error::Error for MoveParseError {}
 
-/// converts Vec of uci moves `Vec<["e2e4", "e7e5", ...]>`, into Vec of SAN moves
-pub fn uci_to_san(uci_moves: Vec<String>, starting_fen: Option<String>) -> MovesAndError {
+#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+pub struct MovesAndError {
+    pub moves: Vec<String>,
+    pub message: Option<String>,
+}
+
+/// converts Vec of moves in SAN/LAN format, into Vec of SAN moves
+#[wasm_bindgen(js_name = "toSan")]
+pub fn to_san(moves: Vec<String>, starting_fen: Option<String>) -> MovesAndError {
     let starting_fen = starting_fen.unwrap_or_else(|| {
         Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
     });
@@ -73,7 +62,7 @@ pub fn uci_to_san(uci_moves: Vec<String>, starting_fen: Option<String>) -> Moves
         }
     };
 
-    for uci_move_str in uci_moves {
+    for uci_move_str in moves {
         let internal_move: Move = match str_to_move(&uci_move_str, &chess_pos) {
             Ok(val) => val,
             Err(err) => {
@@ -109,7 +98,9 @@ pub fn uci_to_san(uci_moves: Vec<String>, starting_fen: Option<String>) -> Moves
     }
 }
 
-pub fn san_to_uci(san_moves: Vec<String>, starting_fen: Option<String>) -> MovesAndError {
+/// converts Vec of moves in SAN/LAN format, into Vec of UCI moves
+#[wasm_bindgen(js_name = "toUci")]
+pub fn to_uci(moves: Vec<String>, starting_fen: Option<String>) -> MovesAndError {
     let starting_fen = starting_fen.unwrap_or_else(|| {
         Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
     });
@@ -140,7 +131,7 @@ pub fn san_to_uci(san_moves: Vec<String>, starting_fen: Option<String>) -> Moves
         }
     };
 
-    for san_move_str in san_moves {
+    for san_move_str in moves {
         let internal_move: Move = match str_to_move(&san_move_str, &chess_pos) {
             Ok(val) => val,
             Err(err) => {
@@ -177,8 +168,9 @@ pub fn san_to_uci(san_moves: Vec<String>, starting_fen: Option<String>) -> Moves
 }
 
 pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError> {
-    // if move is in a UCI format we immediately
-    // try to return it
+    // if move is in a UCI format we
+    // try to return it immediately
+    //
     // otherwise we know that there is a parsing error
     // because move is either in SAN format or illegal
     if let Ok(move_uci) = move_str.parse::<UciMove>() {
@@ -207,4 +199,40 @@ pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError
     }
 
     Err(MoveParseError::InvalidFormat(move_str.to_string()))
+}
+
+// TODO: return something like MovesAndError
+fn to_internal_moves(moves: Vec<String>, starting_fen: Option<String>) -> Vec<Move> {
+    let starting_fen = starting_fen.unwrap_or_else(|| {
+        Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
+    });
+
+    let mut internal_moves_list: Vec<Move> = vec![];
+
+    let fen: Fen = match starting_fen.parse() {
+        Ok(val) => val,
+        Err(_err) => return internal_moves_list,
+    };
+
+    let mut chess_pos: Chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
+        Ok(val) => val,
+        Err(_err) => return internal_moves_list,
+    };
+
+    for move_str in moves {
+        let internal_move: Move = match str_to_move(&move_str, &chess_pos) {
+            Ok(val) => val,
+            Err(_err) => return internal_moves_list,
+        };
+
+        if !chess_pos.is_legal(internal_move) {
+            return internal_moves_list;
+        }
+
+        chess_pos.play_unchecked(internal_move);
+
+        internal_moves_list.push(internal_move);
+    }
+
+    internal_moves_list
 }
