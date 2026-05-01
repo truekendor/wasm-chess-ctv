@@ -322,7 +322,7 @@ impl WasmChess {
     pub fn ascii(&self) -> String {
         let border: &str = "   +------------------------+\n";
         let letters: &str = "     a  b  c  d  e  f  g  h\n";
-        let mut ascii_str = String::new();
+        let mut ascii_str = String::with_capacity(328);
 
         ascii_str.push_str(border);
 
