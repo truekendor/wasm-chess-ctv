@@ -234,9 +234,9 @@ impl WasmChess {
         helpers::legal_moves::san(&self.chess)
     }
 
-    // #[wasm_bindgen(js_name = "legalMovesVerbose")]
-    fn legal_moves_verbose(&self) -> Vec<MoveVerbose> {
-        todo!()
+    #[wasm_bindgen(js_name = "legalMovesVerbose")]
+    pub fn legal_moves_verbose(&self) -> Vec<MoveVerbose> {
+        helpers::legal_moves::verbose(&self.chess)
     }
 
     pub fn perft(&self, depth: usize) -> u64 {
