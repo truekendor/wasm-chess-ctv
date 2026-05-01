@@ -4,7 +4,10 @@
 
 #[cfg(test)]
 pub mod test {
+    use shakmaty::Square;
+
     use crate::WasmChess;
+    use crate::helpers::tsify::*;
 
     #[test]
     fn test_new_game_initial_position() {
@@ -232,5 +235,35 @@ pub mod test {
         let result = chess.make_move("Nb1");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn square_color() {
+        let chess = WasmChess::new(None).unwrap();
+
+        let sq_color_1 = chess.square_color(SquareStr::A1);
+        let sq_color_2 = chess.square_color("a5".parse().unwrap());
+        let sq_color_3 = chess.square_color("c5".parse().unwrap());
+
+        assert!(sq_color_1.is_some());
+        assert!(sq_color_2.is_some());
+        assert!(sq_color_3.is_some());
+    }
+
+    #[test]
+    fn square_str_parsing() {
+        let sq_str_lowercase = "a1".parse::<SquareStr>();
+        let sq_str_uppercase = "A1".parse::<SquareStr>();
+
+        let from_shakmaty_lowercase = Square::A1.to_string().to_lowercase().parse::<SquareStr>();
+        let from_shakmaty_default = Square::A1.to_string().parse::<SquareStr>();
+        let from_shakmaty_uppercase = Square::A1.to_string().to_uppercase().parse::<SquareStr>();
+
+        assert!(sq_str_lowercase.is_ok());
+        assert!(sq_str_uppercase.is_err());
+
+        assert!(from_shakmaty_lowercase.is_ok());
+        assert!(from_shakmaty_default.is_ok());
+        assert!(from_shakmaty_uppercase.is_err());
     }
 }
