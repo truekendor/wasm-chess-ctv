@@ -13,13 +13,13 @@ pub mod test {
     fn test_new_game_initial_position() {
         let chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(
+        pretty_assertions::assert_eq!(
             chess.fen(None),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
-        assert_eq!(chess.turn(), "w");
-        assert_eq!(chess.fullmoves(), 1);
-        assert_eq!(chess.halfmoves(), 0);
+        pretty_assertions::assert_eq!(chess.turn(), "w");
+        pretty_assertions::assert_eq!(chess.fullmoves(), 1);
+        pretty_assertions::assert_eq!(chess.halfmoves(), 0);
         assert!(!chess.is_game_over());
         assert!(!chess.is_check());
         assert!(!chess.is_checkmate());
@@ -31,17 +31,21 @@ pub mod test {
 
         // Valid moves
         assert!(chess.make_move("e2e4").is_ok());
-        assert_eq!(
+        pretty_assertions::assert_eq!(
             chess.fen(None),
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+        );
+        pretty_assertions::assert_eq!(
+            chess.fen(Some(true)),
             "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         );
-        assert_eq!(chess.turn(), "b");
-        assert_eq!(chess.fullmoves(), 1);
-        assert_eq!(chess.halfmoves(), 0);
+        pretty_assertions::assert_eq!(chess.turn(), "b");
+        pretty_assertions::assert_eq!(chess.fullmoves(), 1);
+        pretty_assertions::assert_eq!(chess.halfmoves(), 0);
 
         assert!(chess.make_move("e7e5").is_ok());
-        assert_eq!(chess.turn(), "w");
-        assert_eq!(chess.fullmoves(), 2);
+        pretty_assertions::assert_eq!(chess.turn(), "w");
+        pretty_assertions::assert_eq!(chess.fullmoves(), 2);
 
         // Invalid move
         let result = chess.make_move("e2e4");
@@ -201,8 +205,11 @@ pub mod test {
         let mut chess = WasmChess::new(None).unwrap();
 
         let fen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
+        let fen_no_ep = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2";
+
         assert!(chess.load(fen.to_string()).is_ok());
-        pretty_assertions::assert_eq!(chess.fen(None), fen);
+        pretty_assertions::assert_eq!(chess.fen(Some(true)), fen);
+        pretty_assertions::assert_eq!(chess.fen(Some(false)), fen_no_ep);
 
         // Test invalid FEN
         let result = chess.load("invalid".to_string());
