@@ -1,6 +1,6 @@
 use shakmaty::{Chess, Color, Position, fen::Fen, san::San, uci::UciMove};
 
-use crate::helpers::tsify::{AttackedBySide, MoveVerbose};
+use crate::helpers::tsify::{ColorChar, MoveVerbose};
 
 pub fn uci(chess: &Chess) -> Vec<String> {
     let legal_moves: Vec<String> = chess
@@ -42,8 +42,8 @@ pub fn verbose(chess: &Chess) -> Vec<MoveVerbose> {
                 internal_move.capture().map(|val| val.char().to_string());
 
             let color_shorthand = match chess.turn() {
-                Color::White => AttackedBySide::W,
-                Color::Black => AttackedBySide::B,
+                Color::White => ColorChar::W,
+                Color::Black => ColorChar::B,
             };
 
             let mut new_position = chess.clone();

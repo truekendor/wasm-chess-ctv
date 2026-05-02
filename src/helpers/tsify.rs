@@ -9,7 +9,7 @@ pub struct HeadersObj {
     pub headers_data: HashMap<String, String>,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct MoveVerbose {
@@ -21,7 +21,7 @@ pub struct MoveVerbose {
     /// fen after move is played
     pub after: String,
 
-    pub color: AttackedBySide,
+    pub color: ColorChar,
     pub piece: String,
     pub captured: Option<String>,
 
@@ -33,15 +33,6 @@ pub struct MoveVerbose {
     pub is_en_passant: bool,
     // for now we do not distinguish between kingside and queenside castle
     pub is_castle: bool,
-}
-
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "lowercase")]
-pub enum AttackedBySide {
-    W,
-    B,
-    Both,
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
@@ -88,7 +79,7 @@ pub struct CastlingObj {
     pub queen: bool,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub enum ColorChar {

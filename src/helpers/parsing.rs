@@ -1,8 +1,10 @@
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
-use shakmaty::{Chess, Move, Position, fen::Fen, san::San, uci::UciMove};
+use shakmaty::{Chess, Color, Move, Position, fen::Fen, san::San, uci::UciMove};
 use wasm_bindgen::prelude::wasm_bindgen;
+
+use crate::helpers::tsify::{ColorChar, MoveVerbose};
 
 #[derive(Clone, Debug)]
 pub enum MoveParseError {
@@ -235,4 +237,49 @@ fn to_internal_moves(moves: Vec<String>, starting_fen: Option<String>) -> Vec<Mo
     }
 
     internal_moves_list
+}
+
+pub fn verbose_move_object_from_internal_move(
+    internal_move: Move,
+    chess_pos: &Chess,
+) -> Result<MoveVerbose, String> {
+    let mut chess_pos = chess_pos.clone();
+
+    let fen_before = Fen::from_position(&chess_pos, shakmaty::EnPassantMode::Legal);
+
+    let promotion: Option<String> = internal_move.promotion().map(|val| val.char().to_string());
+    let captured_piece: Option<String> = internal_move.capture().map(|val| val.char().to_string());
+    let from_sq = internal_move.from();
+
+    let color_shorthand = match chess_pos.turn() {
+        Color::White => ColorChar::W,
+        Color::Black => ColorChar::B,
+    };
+
+    let san_move = San::from_move(&chess_pos.clone(), internal_move);
+    chess_pos.play_unchecked(internal_move);
+    let fen_after = Fen::from_position(&chess_pos, shakmaty::EnPassantMode::Legal);
+
+    if from_sq.is_none() {
+        return Err("unable to get square info from move".to_string());
+    }
+
+    Ok(MoveVerbose {
+        from: from_sq.unwrap().to_string(),
+        to: internal_move.to().to_string(),
+        promotion,
+        lan: internal_move
+            .to_uci(shakmaty::CastlingMode::Chess960)
+            .to_string(),
+        san: san_move.to_string(),
+        piece: internal_move.role().char().to_string(),
+        captured: captured_piece,
+
+        color: color_shorthand,
+        before: fen_before.to_string(),
+        after: fen_after.to_string(),
+
+        is_en_passant: internal_move.is_en_passant(),
+        is_castle: internal_move.is_castle(),
+    })
 }

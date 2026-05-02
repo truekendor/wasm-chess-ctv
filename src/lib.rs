@@ -9,8 +9,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::helpers::{
     pgn_reader::PGNResult,
     tsify::{
-        AttackedBySide, CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveObject, MoveVerbose,
-        PieceObj, SquareColor, SquareStr,
+        CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveObject, MoveVerbose, PieceObj,
+        SquareColor, SquareStr,
     },
 };
 
@@ -215,10 +215,10 @@ impl WasmChess {
         Some(fen.to_string())
     }
 
-    pub fn undo(&mut self) -> Result<String, String> {
+    pub fn undo(&mut self) -> Option<MoveVerbose> {
         let last = match self.history.pop() {
             Some(h) => h,
-            None => return Err("No moves to undo".to_string()),
+            None => return None,
         };
 
         if let Some(count) = self.position_count.get_mut(&self.hash) {
@@ -228,12 +228,18 @@ impl WasmChess {
             }
         }
         self.chess = last.position;
-
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
         self.position_count.entry(self.hash).or_insert(1);
 
-        Ok(last.internal_move.to_string())
+        let move_verbose: Option<MoveVerbose> =
+            helpers::parsing::verbose_move_object_from_internal_move(
+                last.internal_move,
+                &self.chess,
+            )
+            .ok();
+
+        move_verbose
     }
 
     #[wasm_bindgen(js_name = "legalMovesUCI")]
@@ -575,7 +581,7 @@ impl WasmChess {
     pub fn attackers(
         &self,
         square: SquareStr,
-        attacked_by_side: Option<AttackedBySide>,
+        attacked_by_side: Option<ColorChar>,
     ) -> Result<Vec<String>, String> {
         let square = Square::from_str(&square.to_string().to_lowercase());
 
@@ -618,13 +624,13 @@ impl WasmChess {
             }
         } else {
             match attacked_by_side.unwrap() {
-                AttackedBySide::W => {
+                ColorChar::W => {
                     squares.append(&mut w_attackers);
                 }
-                AttackedBySide::B => {
+                ColorChar::B => {
                     squares.append(&mut b_attackers);
                 }
-                AttackedBySide::Both => {
+                _ => {
                     squares.append(&mut w_attackers);
                     squares.append(&mut b_attackers);
                 }
@@ -698,8 +704,8 @@ impl WasmChess {
 
                 let fen_after = Fen::from_position(&chess, shakmaty::EnPassantMode::Legal);
                 let color_shorthand = match history_entry.turn {
-                    Color::White => AttackedBySide::W,
-                    Color::Black => AttackedBySide::B,
+                    Color::White => ColorChar::W,
+                    Color::Black => ColorChar::B,
                 };
 
                 let from_sq = internal_move.from();
@@ -726,6 +732,43 @@ impl WasmChess {
                     is_en_passant: internal_move.is_en_passant(),
                     is_castle: internal_move.is_castle(),
                 })
+            })
+            .rev()
+            .collect();
+
+        if moves_verbose.is_err() {
+            return Err(moves_verbose.err().unwrap());
+        }
+
+        Ok(moves_verbose.unwrap())
+    }
+    
+    // TODO add tests and replace history_verbose with this later
+    // #[wasm_bindgen(js_name = "historyVerboseDEV")]
+    fn history_verbose_dev(&self) -> Result<Vec<MoveVerbose>, String> {
+        if self.history.len() == 0 {
+            return Ok(vec![]);
+        }
+
+        let moves_verbose: Result<Vec<MoveVerbose>, String> = self
+            .history
+            .iter()
+            .rev()
+            .map(|history_entry| -> Result<MoveVerbose, String> {
+                let move_verbose = helpers::parsing::verbose_move_object_from_internal_move(
+                    history_entry.internal_move,
+                    &history_entry.position,
+                ).map_err(|err| {
+                    return format!("Error converting move to verbose move object\nError message: {}\nMove: {}\nPosition FEN: {}", 
+                        err, 
+                        history_entry.internal_move.to_string(), 
+                        history_entry.fen.to_string()
+                    );
+                })?;
+
+                
+                Ok(move_verbose)
+
             })
             .rev()
             .collect();
