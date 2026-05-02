@@ -67,13 +67,18 @@ mod undo_logic_test {
     fn test_undo() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert!(chess.make_move("e2e4").is_ok());
-        assert!(chess.make_move("e7e5").is_ok());
+        chess.make_move("e2e4").unwrap();
+        chess.make_move("e7e5").unwrap();
+
+        pretty_assertions::assert_eq!(chess.history.len(), 2);
+        pretty_assertions::assert_eq!(chess.position_count.len(), 3);
 
         let undo_result = chess.undo();
-        assert!(undo_result.is_some());
-        pretty_assertions::assert_eq!(undo_result.unwrap().san, "e5".to_string());
 
+        pretty_assertions::assert_eq!(chess.history.len(), 1);
+        pretty_assertions::assert_eq!(chess.position_count.len(), 2);
+
+        pretty_assertions::assert_eq!(undo_result.unwrap().san, "e5".to_string());
         pretty_assertions::assert_eq!(chess.turn(), "b");
         pretty_assertions::assert_eq!(chess.fullmoves(), 1);
 
@@ -89,5 +94,9 @@ mod undo_logic_test {
         // Undo when no moves left
         assert!(chess.undo().is_none());
         assert!(chess.undo().is_none());
+
+        pretty_assertions::assert_eq!(chess.history.len(), 0);
+        // we always have starting position in position count, so it should never be 0
+        pretty_assertions::assert_eq!(chess.position_count.len(), 1);
     }
 }
