@@ -47,7 +47,7 @@ mod undo_logic_test {
         assert!(undo_result2.is_ok());
         assert_eq!(undo_result2.unwrap(), "e2-e4");
         assert_eq!(
-            chess.fen(),
+            chess.fen(None),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
 
