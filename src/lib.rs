@@ -102,7 +102,11 @@ impl WasmChess {
             })?;
 
         if !self.chess.is_legal(internal_move) {
-            return Err(format!("Illegal move: {}\nFEN: {}", move_str, self.fen()));
+            return Err(format!(
+                "Illegal move: {}\nFEN: {}",
+                move_str,
+                self.fen(None)
+            ));
         }
 
         self.push_history_entry(internal_move);
@@ -186,8 +190,13 @@ impl WasmChess {
         self.position_count.insert(zobrist_hash, 1);
     }
 
-    pub fn fen(&self) -> String {
-        let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Always);
+    pub fn fen(&self, force_en_passant_square: Option<bool>) -> String {
+        let en_passant_mode = match force_en_passant_square {
+            Some(true) => shakmaty::EnPassantMode::Always,
+            Some(false) => shakmaty::EnPassantMode::Legal,
+            None => shakmaty::EnPassantMode::Legal,
+        };
+        let fen = Fen::from_position(&self.chess, en_passant_mode);
 
         fen.to_string()
     }
