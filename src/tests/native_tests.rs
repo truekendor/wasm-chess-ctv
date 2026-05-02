@@ -167,16 +167,16 @@ pub mod test {
     fn test_halfmoves_counter() {
         let mut chess = WasmChess::new(None).unwrap();
 
-        assert_eq!(chess.halfmoves(), 0);
+        pretty_assertions::assert_eq!(chess.halfmoves(), 0);
         chess.make_move("e2e4").unwrap();
-        assert_eq!(chess.halfmoves(), 0); // Pawn move resets counter
+        pretty_assertions::assert_eq!(chess.halfmoves(), 0); // Pawn move resets counter
         chess.make_move("e7e5").unwrap();
-        assert_eq!(chess.halfmoves(), 0); // Pawn move resets counter
+        pretty_assertions::assert_eq!(chess.halfmoves(), 0); // Pawn move resets counter
 
         chess.make_move("g1f3").unwrap();
-        assert_eq!(chess.halfmoves(), 1);
+        pretty_assertions::assert_eq!(chess.halfmoves(), 1);
         chess.make_move("g8f6").unwrap();
-        assert_eq!(chess.halfmoves(), 2);
+        pretty_assertions::assert_eq!(chess.halfmoves(), 2);
     }
 
     #[test]
@@ -189,11 +189,11 @@ pub mod test {
 
         chess.reset();
 
-        assert_eq!(
+        pretty_assertions::assert_eq!(
             chess.fen(),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
-        assert_eq!(chess.history_san().len(), 0);
+        pretty_assertions::assert_eq!(chess.history_san().len(), 0);
     }
 
     #[test]
@@ -202,7 +202,7 @@ pub mod test {
 
         let fen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
         assert!(chess.load(fen.to_string()).is_ok());
-        assert_eq!(chess.fen(), fen);
+        pretty_assertions::assert_eq!(chess.fen(), fen);
 
         // Test invalid FEN
         let result = chess.load("invalid".to_string());
@@ -241,9 +241,20 @@ pub mod test {
     fn square_color() {
         let chess = WasmChess::new(None).unwrap();
 
+        let sq_from_str_1 = "a5".parse();
+        let sq_from_str_2 = "c5".parse();
+        let sq_from_str_3 = "C5".parse::<SquareStr>();
+
+        assert!(sq_from_str_1.is_ok());
+        assert!(sq_from_str_2.is_ok());
+        assert!(sq_from_str_3.is_err());
+
+        let sq_from_str_1 = sq_from_str_1.unwrap();
+        let sq_from_str_2 = sq_from_str_2.unwrap();
+
         let sq_color_1 = chess.square_color(SquareStr::A1);
-        let sq_color_2 = chess.square_color("a5".parse().unwrap());
-        let sq_color_3 = chess.square_color("c5".parse().unwrap());
+        let sq_color_2 = chess.square_color(sq_from_str_1);
+        let sq_color_3 = chess.square_color(sq_from_str_2);
 
         assert!(sq_color_1.is_some());
         assert!(sq_color_2.is_some());
