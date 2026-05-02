@@ -331,11 +331,11 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "squareColor")]
     pub fn square_color(&self, square: SquareStr) -> Option<SquareColor> {
-        let sq_string = square.to_string().to_lowercase();
+        let sq_string = square.to_string();
 
         let square = match Square::from_ascii(sq_string.as_bytes()) {
             Ok(val) => val,
-            Err(err) => {
+            Err(_err) => {
                 return None;
             }
         };
@@ -349,8 +349,8 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "findPiece")]
-    pub fn find_piece(&self, piece: String) -> Result<Vec<String>, String> {
-        let mut squares_with_piece: Vec<String> = vec![];
+    pub fn find_piece(&self, piece: String) -> Result<Vec<SquareStr>, String> {
+        let mut squares_with_piece: Vec<SquareStr> = vec![];
 
         let piece = piece.trim();
         if piece.len() > 1 {
@@ -375,7 +375,7 @@ impl WasmChess {
 
         self.chess.board().iter().for_each(|(sq, p)| {
             if p == piece_type {
-                squares_with_piece.push(sq.to_string());
+                squares_with_piece.push(sq.to_string().to_lowercase().parse().unwrap());
             }
         });
 
