@@ -55,7 +55,10 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     use pgn_reader::Reader;
     use shakmaty::Piece;
 
-    use crate::{WasmChess, helpers::pgn_reader::PGNResult};
+    use crate::{
+        WasmChess,
+        helpers::{pgn_reader::PGNResult, tsify::ColorChar},
+    };
 
     use std::{
         fs::{self},
@@ -126,7 +129,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         wasm_chess.load_pgn(pgn.to_owned()).unwrap();
         let turn = wasm_chess.turn();
-        assert_eq!(turn, "w");
+        assert_eq!(turn, ColorChar::W);
     }
 
     #[test]
@@ -137,7 +140,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         wasm_chess.load_pgn(pgn.to_owned()).unwrap();
         let turn = wasm_chess.turn();
-        assert_eq!(turn, "b");
+        assert_eq!(turn, ColorChar::B);
     }
 
     #[test]
@@ -152,7 +155,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         wasm_chess.load_pgn(pgn.to_owned()).unwrap();
         let turn = wasm_chess.turn();
-        assert_eq!(turn, "w");
+        assert_eq!(turn, ColorChar::W);
     }
 
     #[test]

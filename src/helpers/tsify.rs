@@ -37,7 +37,7 @@ pub struct MoveVerbose {
 
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum SquareColor {
     Light,
     Dark,
@@ -71,9 +71,8 @@ pub struct MoveAlgebraic {
     pub to: SquareColor,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
 pub struct CastlingObj {
     pub king: bool,
     pub queen: bool,

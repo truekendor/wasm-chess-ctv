@@ -17,7 +17,7 @@ pub mod test {
             chess.fen(None),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
-        pretty_assertions::assert_eq!(chess.turn(), "w");
+        pretty_assertions::assert_eq!(chess.turn(), ColorChar::W);
         pretty_assertions::assert_eq!(chess.fullmoves(), 1);
         pretty_assertions::assert_eq!(chess.halfmoves(), 0);
         assert!(!chess.is_game_over());
@@ -39,12 +39,12 @@ pub mod test {
             chess.fen(Some(true)),
             "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         );
-        pretty_assertions::assert_eq!(chess.turn(), "b");
+        pretty_assertions::assert_eq!(chess.turn(), ColorChar::B);
         pretty_assertions::assert_eq!(chess.fullmoves(), 1);
         pretty_assertions::assert_eq!(chess.halfmoves(), 0);
 
         assert!(chess.make_move("e7e5").is_ok());
-        pretty_assertions::assert_eq!(chess.turn(), "w");
+        pretty_assertions::assert_eq!(chess.turn(), ColorChar::W);
         pretty_assertions::assert_eq!(chess.fullmoves(), 2);
 
         // Invalid move

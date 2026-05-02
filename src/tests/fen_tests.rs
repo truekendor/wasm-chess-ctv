@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod fen_tests {
-    use crate::WasmChess;
+    use crate::{WasmChess, helpers::tsify::ColorChar};
     use std::usize;
 
     #[test]
@@ -27,7 +27,7 @@ pub mod fen_tests {
 
         pretty_assertions::assert_eq!(chess.fen(Some(true)), fen);
         pretty_assertions::assert_eq!(chess.fen(None), fen_no_ep);
-        pretty_assertions::assert_eq!(chess.turn(), "b");
+        pretty_assertions::assert_eq!(chess.turn(), ColorChar::B);
     }
 
     #[test]

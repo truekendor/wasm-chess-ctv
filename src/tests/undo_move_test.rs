@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod undo_logic_test {
-    use crate::{WasmChess, helpers::tsify::MoveVerbose};
+    use crate::{
+        WasmChess,
+        helpers::tsify::{ColorChar, MoveVerbose},
+    };
 
     #[test]
     fn test_undo_after_two_moves() {
@@ -79,7 +82,7 @@ mod undo_logic_test {
         pretty_assertions::assert_eq!(chess.position_count.len(), 2);
 
         pretty_assertions::assert_eq!(undo_result.unwrap().san, "e5".to_string());
-        pretty_assertions::assert_eq!(chess.turn(), "b");
+        pretty_assertions::assert_eq!(chess.turn(), ColorChar::B);
         pretty_assertions::assert_eq!(chess.fullmoves(), 1);
 
         // Undo again

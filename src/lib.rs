@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 
 use shakmaty::{
-    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
+    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -37,7 +37,6 @@ struct WasmChess {
     position_count: HashMap<Zobrist64, i32>,
     // TODO: rename
     pgn_result: Option<PGNResult>,
-    seven_tag_roster: HashMap<String, String>,
 }
 
 #[wasm_bindgen]
@@ -73,16 +72,6 @@ impl WasmChess {
 
         let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
 
-        // TODO do we need this??
-        let seven_tag_roster: HashMap<String, String> = HashMap::from([
-            ("Event".to_owned(), "?".to_owned()),
-            ("Site".to_owned(), "?".to_owned()),
-            ("Date".to_owned(), "????.??.??".to_owned()),
-            ("Round".to_owned(), "?".to_owned()),
-            ("White".to_owned(), "?".to_owned()),
-            ("Black".to_owned(), "?".to_owned()),
-            ("Result".to_owned(), "*".to_owned()),
-        ]);
 
         Ok(WasmChess {
             chess: chess,
@@ -90,7 +79,6 @@ impl WasmChess {
             position_count,
             history: vec![],
             pgn_result: None,
-            seven_tag_roster,
         })
     }
 
@@ -410,7 +398,7 @@ impl WasmChess {
             helpers::tsify::PieceSymbol::K => 'k',
             _ => {
                 return Err(format!(
-                    "Unknown piece type\nInput type: {:#?}\nInput color: {:#?}",
+                    "Unknown piece type\nInput piece type: {:#?}\nInput color: {:#?}",
                     piece.r#type, piece.color
                 ));
             }
@@ -444,17 +432,27 @@ impl WasmChess {
         return self.hash.0;
     }
 
-    // TODO: add tsfify types like "w" | "b"
-    // #[wasm_bindgen(js_name = "getCastlingRights")]
-    fn get_castling_rights(&self, color_char: ColorChar) -> Result<CastlingObj, String> {
-        let color_char = match color_char {
-            ColorChar::W => Color::White,
-            ColorChar::B => Color::Black,
+
+    #[wasm_bindgen(js_name = "getCastlingRights")]
+    pub fn get_castling_rights(&self, color_char: ColorChar) -> Result<CastlingObj, String> {
+        let castles_bitboard = &self.chess.castles().castling_rights();
+
+        match color_char {
+            ColorChar::W => {
+
+                let queenside = castles_bitboard.contains(Square::A1);
+                let kingside = castles_bitboard.contains(Square::H1);
+
+                return Ok(CastlingObj { king: kingside, queen: queenside });
+            },
+            ColorChar::B => {
+                let queenside = castles_bitboard.contains(Square::A8);
+                let kingside = castles_bitboard.contains(Square::H8);
+
+                return Ok(CastlingObj { king: kingside, queen: queenside });
+            }
         };
 
-        let fen = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
-
-        todo!()
     }
 
     #[wasm_bindgen(js_name = "isGameOver")]
@@ -500,10 +498,10 @@ impl WasmChess {
             || self.is_threefold_repetition()
     }
 
-    pub fn turn(&self) -> String {
+    pub fn turn(&self) -> ColorChar {
         match self.chess.turn() {
-            Color::White => "w".to_string(),
-            Color::Black => "b".to_string(),
+            Color::White => ColorChar::W,
+            Color::Black => ColorChar::B,
         }
     }
 
@@ -859,21 +857,6 @@ impl WasmChess {
         todo!("Comments API is not implemented yet");
     }
 
-    #[wasm_bindgen(js_name = "removeHeader")]
-    pub fn remove_header(&mut self, key: String) -> bool {
-        if self.pgn_result.is_some() {
-            let val = self.pgn_result.as_mut().unwrap().headers.remove(&key);
-
-            return val.is_some();
-        }
-
-        return false;
-    }
-
-    fn set_comment() {
-        todo!()
-    }
-
     #[wasm_bindgen(js_name = "setHeader")]
     pub fn set_header(&mut self, key: String, value: String) -> HeadersObj {
         if self.pgn_result.is_none() {
@@ -890,4 +873,22 @@ impl WasmChess {
 
         self.get_headers()
     }
+
+
+    #[wasm_bindgen(js_name = "removeHeader")]
+    pub fn remove_header(&mut self, key: String) -> bool {
+        if self.pgn_result.is_some() {
+            let val = self.pgn_result.as_mut().unwrap().headers.remove(&key);
+
+            return val.is_some();
+        }
+
+        return false;
+    }
+
+    fn set_comment(&self, comment: String) {
+        todo!()
+    }
+
+
 }
