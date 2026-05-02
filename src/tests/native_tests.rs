@@ -14,7 +14,7 @@ pub mod test {
         let chess = WasmChess::new(None).unwrap();
 
         assert_eq!(
-            chess.fen(),
+            chess.fen(None),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
         assert_eq!(chess.turn(), "w");
@@ -32,7 +32,7 @@ pub mod test {
         // Valid moves
         assert!(chess.make_move("e2e4").is_ok());
         assert_eq!(
-            chess.fen(),
+            chess.fen(None),
             "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         );
         assert_eq!(chess.turn(), "b");
@@ -190,7 +190,7 @@ pub mod test {
         chess.reset();
 
         pretty_assertions::assert_eq!(
-            chess.fen(),
+            chess.fen(None),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
         pretty_assertions::assert_eq!(chess.history_san().len(), 0);
@@ -202,7 +202,7 @@ pub mod test {
 
         let fen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
         assert!(chess.load(fen.to_string()).is_ok());
-        pretty_assertions::assert_eq!(chess.fen(), fen);
+        pretty_assertions::assert_eq!(chess.fen(None), fen);
 
         // Test invalid FEN
         let result = chess.load("invalid".to_string());
