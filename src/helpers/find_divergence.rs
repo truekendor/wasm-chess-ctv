@@ -45,21 +45,19 @@ pub fn find_divergence(
     let result_current = get_hash_and_san(move_list_current, Some(starting_fen.clone()));
     let result_reverse = get_hash_and_san(move_list_reverse, Some(starting_fen.clone()));
 
-    // TODO: rename from "fen" set
     let reverse_zobrist_set: HashSet<&Zobrist64> =
         HashSet::from_iter(result_reverse.zobrist_hash.iter());
 
     let current_san_moves = result_current.san_moves;
     let reverse_san_moves = result_reverse.san_moves;
 
-    // todo: rename
-    let current_fen_list = result_current.zobrist_hash;
-    let reverse_fen_list = &result_reverse.zobrist_hash;
+    let current_hash_list = result_current.zobrist_hash;
+    let reverse_hash_list = &result_reverse.zobrist_hash;
 
     let mut was_same_pos = &current_san_moves[0] == &reverse_san_moves[0];
     let mut prev_zobrist_hash: Zobrist64 = Zobrist64::default();
 
-    current_fen_list
+    current_hash_list
         .iter()
         .enumerate()
         .for_each(|(index, hash)| {
@@ -71,7 +69,7 @@ pub fn find_divergence(
 
                 was_same_pos = true;
             } else if was_same_pos {
-                let diverge_move_index = &reverse_fen_list
+                let diverge_move_index = &reverse_hash_list
                     .iter()
                     .rposition(|el| {
                         return el == &prev_zobrist_hash;
