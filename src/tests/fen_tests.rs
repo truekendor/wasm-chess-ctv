@@ -6,14 +6,12 @@ pub mod fen_tests {
     #[test]
     fn test_new_game_custom_fen() {
         let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+        let fen_no_ep = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
         let chess = WasmChess::new(Some(fen.to_string())).unwrap();
 
-        assert_eq!(chess.fen(), fen);
-        assert_eq!(chess.turn(), "b");
-    }
-
-    fn test_check_detection() {
-        todo!()
+        pretty_assertions::assert_eq!(chess.fen(Some(true)), fen);
+        pretty_assertions::assert_eq!(chess.fen(None), fen_no_ep);
+        pretty_assertions::assert_eq!(chess.turn(), "b");
     }
 
     #[test]
@@ -34,11 +32,6 @@ pub mod fen_tests {
 
         assert!(result.is_err());
         assert!(result.is_err_and(|err| { err.contains("Error parsing fen string") }));
-    }
-
-    // #[test]
-    fn test_fifty_move_rule() {
-        todo!()
     }
 
     #[test]
@@ -109,5 +102,93 @@ pub mod fen_tests {
         assert!(wasm_chess.fen_at(4).is_none());
         assert!(wasm_chess.fen_at(10000).is_none());
         assert!(wasm_chess.fen_at(usize::MAX).is_none());
+    }
+
+    /// this test and tests below are taken from chess.js test suite to verify that the FEN output is consistent with chess.js
+    ///
+    ///  @link https://github.com/jhlywa/chess.js/blob/master/__tests__/fen.test.ts
+    pub mod chess_js_fen_tests {
+        use super::*;
+
+        #[test]
+        fn ep_square_only_if_legal() {
+            let mut wasm_chess =
+                WasmChess::new(Some("4k3/8/8/8/5p2/8/4P3/4K3 w - - 0 1".to_string())).unwrap();
+
+            wasm_chess.make_move("e4").unwrap();
+
+            pretty_assertions::assert_eq!(
+                wasm_chess.fen(None),
+                "4k3/8/8/8/4Pp2/8/8/4K3 b - e3 0 1"
+            );
+        }
+
+        #[test]
+        fn ep_square_only_if_legal_pinned_first() {
+            let mut wasm_chess =
+                WasmChess::new(Some("5k2/8/8/8/5p2/8/4P3/4KR2 w - - 0 1".to_string())).unwrap();
+
+            wasm_chess.make_move("e4").unwrap();
+
+            pretty_assertions::assert_eq!(
+                wasm_chess.fen(None),
+                "5k2/8/8/8/4Pp2/8/8/4KR2 b - - 0 1"
+            );
+        }
+
+        #[test]
+        fn ep_square_only_if_legal_pinned_second() {
+            let mut wasm_chess = WasmChess::new(Some(
+                "rnb1kbn1/p1p1pp2/PpPp2qr/5Pp1/8/R1P4p/1PK1P1PP/1NBQ1BNR b - - 0 1".to_string(),
+            ))
+            .unwrap();
+
+            wasm_chess.make_move("e5").unwrap();
+
+            pretty_assertions::assert_eq!(
+                wasm_chess.fen(None),
+                "rnb1kbn1/p1p2p2/PpPp2qr/4pPp1/8/R1P4p/1PK1P1PP/1NBQ1BNR w - - 0 2"
+            );
+        }
+
+        #[test]
+        fn allow_ep_square_by_option_pinned() {
+            let mut wasm_chess = WasmChess::new(Some(
+                "rnb1kbn1/p1p1pp2/PpPp2qr/5Pp1/8/R1P4p/1PK1P1PP/1NBQ1BNR b - - 0 1".to_string(),
+            ))
+            .unwrap();
+
+            wasm_chess.make_move("e5").unwrap();
+
+            pretty_assertions::assert_eq!(
+                wasm_chess.fen(Some(true)),
+                "rnb1kbn1/p1p2p2/PpPp2qr/4pPp1/8/R1P4p/1PK1P1PP/1NBQ1BNR w - e6 0 2"
+            );
+        }
+
+        #[test]
+        fn force_en_passant_square_by_option() {
+            let mut wasm_chess = WasmChess::new(None).unwrap();
+
+            wasm_chess.make_move("e4").unwrap();
+            let fen_with_ep = wasm_chess.fen(Some(true));
+            let fen_with_without_ep = wasm_chess.fen(Some(false));
+            let fen_with_without_ep_none = wasm_chess.fen(None);
+
+            pretty_assertions::assert_eq!(
+                fen_with_ep,
+                "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+            );
+
+            pretty_assertions::assert_eq!(
+                fen_with_without_ep,
+                "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+            );
+
+            pretty_assertions::assert_eq!(
+                fen_with_without_ep_none,
+                "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+            );
+        }
     }
 }
