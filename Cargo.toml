@@ -20,6 +20,7 @@ strum = { version = "0.28", features = ["derive"] }
 
 [dev-dependencies]
 wasm-bindgen-test = { version = "*" }
+pretty_assertions = { version = "1.4" }
 
 # Enable simd feature for this crate
 [features]
