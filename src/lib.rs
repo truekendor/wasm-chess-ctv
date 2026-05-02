@@ -496,12 +496,11 @@ impl WasmChess {
                 }
             }
 
-            // ascii_str.push_str(&format!("| {}\n", rank + 1));
             ascii_str.push_str(&format!("|\n"));
         }
 
         ascii_str.push_str(border);
-        ascii_str.push_str(letters);
+        ascii_str.push_str(letters.trim_end());
 
         ascii_str
     }
