@@ -3,19 +3,22 @@ use std::{collections::HashMap, io, ops::ControlFlow};
 
 use pgn_reader::{RawTag, Reader, SanPlus, Visitor};
 
+use crate::WasmChess;
+
 #[derive(Debug, Default, Clone)]
 pub struct PGNResult {
     pub headers: HashMap<String, String>,
-    pub comments: Vec<String>,
-    pub move_list: Vec<String>,
-    pub nag_list: Vec<String>,
     pub starting_fen: Fen,
+
+    pub comments_map: HashMap<String, String>,
+    pub nag_map: HashMap<String, Vec<String>>,
+    // pub suffix_map: HashMap<String, String>,
 }
 
 impl Visitor for PGNResult {
     type Tags = ();
-    type Output = ();
-    type Movetext = ();
+    type Movetext = WasmChess;
+    type Output = Result<WasmChess, String>;
 
     fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
         ControlFlow::Continue(())
@@ -34,8 +37,7 @@ impl Visitor for PGNResult {
             let fen = match Fen::from_ascii(value.as_bytes()) {
                 Ok(fen) => fen,
                 Err(err) => {
-                    eprintln!("{} ({:?})", err, value);
-                    return ControlFlow::Break(());
+                    return ControlFlow::Break(Err(format!("Error parsing fen from PGN: {}", err)));
                 }
             };
             match fen.clone().into_position::<Chess>(CastlingMode::Chess960) {
@@ -44,8 +46,10 @@ impl Visitor for PGNResult {
                     pos
                 }
                 Err(err) => {
-                    eprintln!("{}", err);
-                    return ControlFlow::Break(());
+                    return ControlFlow::Break(Err(format!(
+                        "Position error: {} for FEN: {}",
+                        err, fen
+                    )));
                 }
             };
         };
@@ -56,63 +60,75 @@ impl Visitor for PGNResult {
             return ControlFlow::Continue(());
         };
 
-        ControlFlow::Break(())
-    }
-
-    fn comment(
-        &mut self,
-        _movetext: &mut Self::Movetext,
-        comment: pgn_reader::RawComment<'_>,
-    ) -> ControlFlow<Self::Output> {
-        let comment = str::from_utf8(comment.as_bytes());
-
-        if let Ok(val) = comment {
-            self.comments.push(val.to_string());
-
-            return ControlFlow::Continue(());
-        }
-
-        ControlFlow::Break(())
-    }
-
-    fn san(
-        &mut self,
-        _movetext: &mut Self::Movetext,
-        san_plus: SanPlus,
-    ) -> ControlFlow<Self::Output> {
-        let san_move = san_plus.san.to_string();
-        self.move_list.push(san_move);
-
-        ControlFlow::Continue(())
+        ControlFlow::Break(Err(format!("Error reading PGN. ")))
     }
 
     fn begin_movetext(&mut self, _tags: Self::Tags) -> ControlFlow<Self::Output, Self::Movetext> {
-        ControlFlow::Continue(())
+        ControlFlow::Continue(WasmChess::new(Some(self.starting_fen.to_string())).unwrap())
+    }
+
+    fn san(&mut self, chess: &mut Self::Movetext, san_plus: SanPlus) -> ControlFlow<Self::Output> {
+        match chess.make_move(&san_plus.san.to_string()) {
+            Ok(_) => {
+                return ControlFlow::Continue(());
+            }
+            Err(err) => ControlFlow::Break(Err(format!("{}", err))),
+        }
     }
 
     fn nag(
         &mut self,
-        movetext: &mut Self::Movetext,
+        wasm_chess: &mut Self::Movetext,
         nag: pgn_reader::Nag,
     ) -> ControlFlow<Self::Output> {
         let nag = nag.to_string();
-        self.nag_list.push(nag);
+
+        let fen_key =
+            Fen::from_position(&wasm_chess.chess, shakmaty::EnPassantMode::Legal).to_string();
+
+        // self.nag_map.insert(fen_key, nag).o;
+        self.nag_map.entry(fen_key).or_insert(Vec::new()).push(nag);
 
         ControlFlow::Continue(())
     }
 
-    fn end_game(&mut self, _movetext: Self::Movetext) -> Self::Output {
-        return ();
+    fn comment(
+        &mut self,
+        wasm_chess: &mut Self::Movetext,
+        comment: pgn_reader::RawComment<'_>,
+    ) -> ControlFlow<Self::Output> {
+        let raw_comment = comment;
+        let comment = str::from_utf8(&raw_comment.as_bytes());
+
+        if let Ok(val) = comment {
+            let fen_key =
+                Fen::from_position(&wasm_chess.chess, shakmaty::EnPassantMode::Legal).to_string();
+
+            self.comments_map.insert(fen_key, val.to_string());
+
+            return ControlFlow::Continue(());
+        }
+
+        ControlFlow::Break(Err(format!(
+            "Error parsing comment from PGN: {:?}",
+            raw_comment
+        )))
+    }
+
+    fn end_game(&mut self, wasm_chess: Self::Movetext) -> Self::Output {
+        return Ok(wasm_chess);
     }
 }
 
-pub fn parse_pgn(pgn: String) -> Result<PGNResult, String> {
+pub fn parse_pgn(pgn: String) -> Result<(PGNResult, WasmChess), String> {
     let mut reader = Reader::new(io::Cursor::new(pgn));
     let mut pgn_headers = PGNResult::default();
 
     match reader.read_game(&mut pgn_headers) {
-        Ok(_) => {
-            return Ok(pgn_headers);
+        Ok(chess) => {
+            let chess = chess.unwrap().unwrap();
+
+            return Ok((pgn_headers, chess));
         }
         Err(err) => {
             return Err(err.to_string());

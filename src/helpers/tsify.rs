@@ -60,7 +60,7 @@ pub struct MoveAlgebraic {
     pub to: SquareStr,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct CommentsObj {
@@ -69,7 +69,7 @@ pub struct CommentsObj {
     pub comment: Option<String>,
     #[tsify(optional)]
     pub suffix_annotation: Option<String>,
-    pub nags: Vec<u32>,
+    pub nags: Vec<String>,
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]

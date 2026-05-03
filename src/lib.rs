@@ -1,15 +1,18 @@
 use std::{collections::HashMap, str::FromStr};
 
 use shakmaty::{
-    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64
+    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::helpers::{
-    parsing, pgn_reader::PGNResult, tsify::{
-        CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveAlgebraic, MoveObject, MoveVerbose, PieceObj, SquareColor, SquareStr
-    }
+    parsing,
+    pgn_reader::PGNResult,
+    tsify::{
+        CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveAlgebraic, MoveObject, MoveVerbose,
+        PieceObj, SquareColor, SquareStr,
+    },
 };
 
 mod helpers;
@@ -18,8 +21,6 @@ mod tests;
 #[derive(Clone)]
 struct History {
     internal_move: Move,
-    // maybe drop fen from history and just
-    // calculate it on the fly when needed
     fen: Fen,
     move_number: u32,
     half_moves: u32,
@@ -28,7 +29,7 @@ struct History {
 }
 
 #[wasm_bindgen]
-struct WasmChess {
+pub struct WasmChess {
     chess: Chess,
     history: Vec<History>,
     hash: Zobrist64,
@@ -69,7 +70,6 @@ impl WasmChess {
         let zobrist_hash: Zobrist64 = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
         let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
-
 
         Ok(WasmChess {
             chess: chess,
@@ -430,33 +430,35 @@ impl WasmChess {
         return self.hash.0;
     }
 
-
     #[wasm_bindgen(js_name = "getCastlingRights")]
     pub fn get_castling_rights(&self, color_char: ColorChar) -> Result<CastlingObj, String> {
         let castles_bitboard = &self.chess.castles().castling_rights();
 
         match color_char {
             ColorChar::W => {
-
                 let queenside = castles_bitboard.contains(Square::A1);
                 let kingside = castles_bitboard.contains(Square::H1);
 
-                return Ok(CastlingObj { king: kingside, queen: queenside });
-            },
+                return Ok(CastlingObj {
+                    king: kingside,
+                    queen: queenside,
+                });
+            }
             ColorChar::B => {
                 let queenside = castles_bitboard.contains(Square::A8);
                 let kingside = castles_bitboard.contains(Square::H8);
 
-                return Ok(CastlingObj { king: kingside, queen: queenside });
+                return Ok(CastlingObj {
+                    king: kingside,
+                    queen: queenside,
+                });
             }
         };
-
     }
 
     #[wasm_bindgen(js_name = "isGameOver")]
     pub fn is_game_over(&self) -> bool {
-        self.chess.is_game_over() || 
-        self.is_draw()
+        self.chess.is_game_over() || self.is_draw()
     }
 
     #[wasm_bindgen(js_name = "isCheck")]
@@ -519,10 +521,9 @@ impl WasmChess {
                 return false;
             }
         };
-        
+
         internal_move.is_promotion()
     }
-
 
     pub fn board(&self) -> Vec<String> {
         let result: Vec<String> = Square::ALL
@@ -759,43 +760,42 @@ impl WasmChess {
 
         Ok(moves_verbose.unwrap())
     }
-    
+
     // TODO add tests and replace history_verbose with this later
-    // #[wasm_bindgen(js_name = "historyVerboseDEV")]
-    fn history_verbose_dev(&self) -> Result<Vec<MoveVerbose>, String> {
-        if self.history.len() == 0 {
-            return Ok(vec![]);
-        }
+    // // #[wasm_bindgen(js_name = "historyVerboseDEV")]
+    // fn history_verbose_dev(&self) -> Result<Vec<MoveVerbose>, String> {
+    //     if self.history.len() == 0 {
+    //         return Ok(vec![]);
+    //     }
 
-        let moves_verbose: Result<Vec<MoveVerbose>, String> = self
-            .history
-            .iter()
-            .rev()
-            .map(|history_entry| -> Result<MoveVerbose, String> {
-                let move_verbose = helpers::parsing::verbose_move_object_from_internal_move(
-                    history_entry.internal_move,
-                    &history_entry.position,
-                ).map_err(|err| {
-                    return format!("Error converting move to verbose move object\nError message: {}\nMove: {}\nPosition FEN: {}", 
-                        err, 
-                        history_entry.internal_move.to_string(), 
-                        history_entry.fen.to_string()
-                    );
-                })?;
+    //     let moves_verbose: Result<Vec<MoveVerbose>, String> = self
+    //         .history
+    //         .iter()
+    //         .rev()
+    //         .map(|history_entry| -> Result<MoveVerbose, String> {
+    //             let move_verbose = helpers::parsing::verbose_move_object_from_internal_move(
+    //                 history_entry.internal_move,
+    //                 &history_entry.position,
+    //             ).map_err(|err| {
+    //                 return format!("Error converting move to verbose move object\nError message: {}\nMove: {}\nPosition FEN: {}",
+    //                     err,
+    //                     history_entry.internal_move.to_string(),
+    //                     history_entry.fen.to_string()
+    //                 );
+    //             })?;
 
-                
-                Ok(move_verbose)
+    //             Ok(move_verbose)
 
-            })
-            .rev()
-            .collect();
+    //         })
+    //         .rev()
+    //         .collect();
 
-        if moves_verbose.is_err() {
-            return Err(moves_verbose.err().unwrap());
-        }
+    //     if moves_verbose.is_err() {
+    //         return Err(moves_verbose.err().unwrap());
+    //     }
 
-        Ok(moves_verbose.unwrap())
-    }
+    //     Ok(moves_verbose.unwrap())
+    // }
 
     fn push_history_entry(&mut self, internal_move: Move) {
         self.history.push(History {
@@ -835,16 +835,12 @@ impl WasmChess {
             return Err(format!("Error loading pgn: {}", pgn_error));
         }
 
-        let pgn_result = pgn_headers.unwrap();
+        let (pgn_result, wasm_chess) = pgn_headers.unwrap();
 
-        let starting_fen = pgn_result.starting_fen.clone();
-        let moves_list = pgn_result.move_list.iter();
-
-        self.set_fen(starting_fen)?;
-
-        for san_move in moves_list {
-            self.make_move(san_move)?;
-        }
+        self.chess = wasm_chess.chess;
+        self.hash = wasm_chess.hash;
+        self.history = wasm_chess.history;
+        self.position_count = wasm_chess.position_count;
 
         self.pgn_result = Some(pgn_result);
 
@@ -864,16 +860,38 @@ impl WasmChess {
         };
     }
 
-    // #[wasm_bindgen(js_name = "getComments")]
-    fn get_comments(&self) -> Vec<CommentsObj> {
-        // if self.pgn_result.is_none() {
-        //     return None;
-        // }
+    // TODO: suffix annotations not working for now
+    #[wasm_bindgen(js_name = "getComments")]
+    pub fn get_comments(&mut self) -> Vec<CommentsObj> {
+        let mut comments_vec: Vec<CommentsObj> = vec![];
 
-        // let comments = &self.pgn_result.as_ref().unwrap().comments;
-        // return Some(comments.to_vec());
+        if self.pgn_result.is_none() {
+            return comments_vec;
+        }
 
-        todo!("Comments API is not implemented yet");
+        let pgn_result = self.pgn_result.as_ref().unwrap();
+
+        self.history.iter().for_each(|el| {
+            let fen_str = el.fen.to_string();
+
+            let comments = pgn_result.comments_map.get(&fen_str);
+            let nags = match pgn_result.nag_map.get(&fen_str) {
+                Some(val) => val.clone(),
+                None => vec![],
+            };
+            let suffix: Option<String> = None;
+
+            if comments.is_some() || suffix.is_some() {
+                comments_vec.push(CommentsObj {
+                    fen: fen_str,
+                    comment: comments.cloned(),
+                    suffix_annotation: suffix,
+                    nags,
+                });
+            }
+        });
+
+        comments_vec
     }
 
     #[wasm_bindgen(js_name = "setHeader")]
@@ -893,7 +911,6 @@ impl WasmChess {
         self.get_headers()
     }
 
-
     #[wasm_bindgen(js_name = "removeHeader")]
     pub fn remove_header(&mut self, key: String) -> bool {
         if self.pgn_result.is_some() {
@@ -908,6 +925,4 @@ impl WasmChess {
     fn set_comment(&self, comment: String) {
         todo!()
     }
-
-
 }
