@@ -1,5 +1,8 @@
+/// these tests are from chess.js test suite
+///
+/// @link https://github.com/jhlywa/chess.js/blob/master/__tests__/history.test.ts
 #[cfg(test)]
-pub mod history_test {
+pub mod history_test_chess_js {
     use crate::{
         WasmChess,
         helpers::tsify::{ColorChar, MoveVerbose, SquareStr},
