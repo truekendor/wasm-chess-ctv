@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, ops::Index, str::FromStr};
 
 use shakmaty::{
     Chess, Color, EnPassantMode, Move, Piece, Position, Square, fen::Fen, san::San,
@@ -911,5 +911,100 @@ impl WasmChess {
         pgn_result
             .comments_map
             .insert(fen, comment.replace('{', "[").replace('}', "]"));
+    }
+
+    #[wasm_bindgen(js_name = "getNags")]
+    pub fn get_nags(&self, fen: Option<String>) -> Vec<String> {
+        let empty = vec![];
+        if self.pgn_result.is_none() {
+            return empty;
+        }
+
+        let pgn_result = self.pgn_result.as_ref().unwrap();
+        let fen_key = fen.unwrap_or(self.fen(None));
+
+        let nags = pgn_result.nag_map.get(&fen_key);
+
+        if let Some(nag_list) = nags {
+            return nag_list.clone();
+        }
+
+        return empty;
+    }
+
+    #[wasm_bindgen(js_name = "addNag")]
+    pub fn add_nag(&mut self, nag: String, fen: Option<String>) {
+        let fen_key = fen.unwrap_or(self.fen(None));
+
+        if self.pgn_result.is_none() {
+            return;
+        }
+
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        let nags = pgn_result.nag_map.entry(fen_key.clone()).or_insert(vec![]);
+
+        if !nags.contains(&fen_key) {
+            nags.push(nag);
+        }
+    }
+
+    #[wasm_bindgen(js_name = "setNags")]
+    pub fn set_nags(&mut self, nags: Vec<String>, fen: Option<String>) {
+        let fen_key = fen.unwrap_or(self.fen(None));
+
+        if self.pgn_result.is_none() {
+            return;
+        }
+
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        let _ = pgn_result.nag_map.insert(fen_key, nags);
+    }
+
+    #[wasm_bindgen(js_name = "removeNags")]
+    pub fn remove_nags(&mut self, fen: Option<String>) -> Vec<String> {
+        let fen_key = fen.unwrap_or(self.fen(None));
+        let empty = vec![];
+
+        if self.pgn_result.is_none() {
+            return empty;
+        }
+
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        let removed = pgn_result.nag_map.remove(&fen_key);
+
+        removed.unwrap_or(empty)
+    }
+
+    #[wasm_bindgen(js_name = "removeNag")]
+    pub fn remove_nag(&mut self, nag: String, fen: Option<String>) -> bool {
+        let fen_key = fen.unwrap_or(self.fen(None));
+
+        if self.pgn_result.is_none() {
+            return false;
+        }
+
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        let nags = pgn_result.nag_map.get_mut(&fen_key);
+
+        if nags.is_none() {
+            return false;
+        }
+        let nags = nags.unwrap();
+
+        let index = nags.iter().position(|el| el == &nag);
+
+        if index.is_none() {
+            return false;
+        }
+
+        let index = index.unwrap();
+
+        nags.remove(index);
+
+        return true;
     }
 }
