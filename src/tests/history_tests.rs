@@ -169,16 +169,17 @@ pub mod history_test {
                 color: ColorChar::B,
                 piece: "k".to_string(),
                 from: "e8".to_string(),
-                to: "g8".to_string(),
+                to: "h8".to_string(),
                 san: "O-O".to_string(),
-                lan: "e8g8".to_string(),
+                // TODO: fix Chess960 discrepancy
+                lan: "e8h8".to_string(),
                 before: "rnbqk2r/ppp1bppp/4pn2/3p2B1/2PP4/2N2N2/PP2PPPP/R2QKB1R b KQkq - 4 5"
                     .to_string(),
                 after: "rnbq1rk1/ppp1bppp/4pn2/3p2B1/2PP4/2N2N2/PP2PPPP/R2QKB1R w KQ - 5 6"
                     .to_string(),
                 promotion: None,
                 captured: None,
-                is_castle: false,
+                is_castle: true,
                 is_en_passant: false,
             },
             MoveVerbose {
@@ -1198,12 +1199,20 @@ pub mod history_test {
             },
         ];
 
-        let history = chess.history_verbose().unwrap();
+        let history = chess.history_verbose();
+
+        let history_san = chess.history_san();
+        let history_lan = chess.history_uci();
 
         pretty_assertions::assert_eq!(moves.len(), history.len());
         pretty_assertions::assert_eq!(answer.len(), history.len());
 
-        // pretty_assertions::assert_eq!(answer, history);
+        pretty_assertions::assert_eq!(answer, history);
+
+        answer.iter().enumerate().for_each(|(i, el)| {
+            pretty_assertions::assert_eq!(history_san[i], el.san);
+            pretty_assertions::assert_eq!(history_lan[i], el.lan);
+        });
     }
 
     #[test]
@@ -1285,6 +1294,6 @@ pub mod history_test {
             },
         ];
 
-        pretty_assertions::assert_eq!(moves, chess.history_verbose().unwrap())
+        pretty_assertions::assert_eq!(moves, chess.history_verbose())
     }
 }

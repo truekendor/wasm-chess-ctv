@@ -25,7 +25,9 @@ struct History {
     move_number: u32,
     half_moves: u32,
     turn: Color,
-    position: Chess,
+
+    position_before: Chess,
+    position_after: Chess,
 }
 
 #[wasm_bindgen]
@@ -96,9 +98,10 @@ impl WasmChess {
         }
 
         let fen_before = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
+        let pos_before = self.chess.clone();
 
         self.chess.play_unchecked(internal_move);
-        self.push_history_entry(internal_move, fen_before);
+        self.push_history_entry(internal_move, fen_before, pos_before);
 
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
         *self.position_count.entry(self.hash).or_insert(0) += 1;
@@ -214,7 +217,7 @@ impl WasmChess {
                 self.position_count.remove(&self.hash);
             }
         }
-        self.chess = last.position;
+        self.chess = last.position_after;
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
         self.position_count.entry(self.hash).or_insert(1);
@@ -662,8 +665,7 @@ impl WasmChess {
         self.history
             .iter()
             .map(|history| {
-                let san_move = San::from_move(&history.position, history.internal_move);
-
+                let san_move = San::from_move(&history.position_before, history.internal_move);
                 san_move.to_string()
             })
             .collect()
@@ -682,30 +684,12 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "historyVerbose")]
-    pub fn history_verbose(&self) -> Result<Vec<MoveVerbose>, String> {
-        if self.history.len() == 0 {
-            return Ok(vec![]);
-        }
-
-        let first_entry = &self.history[0];
-
-        let mut chess: Chess = first_entry
-            .fen
-            .clone()
-            .into_position(shakmaty::CastlingMode::Chess960)
-            .map_err(|err| {
-                return format!(
-                    "Error converting FEN into chess position\nError message: {}\nFEN: {}",
-                    err,
-                    first_entry.fen.to_string()
-                );
-            })?;
-
-        let moves_verbose: Result<Vec<MoveVerbose>, String> = self
+    pub fn history_verbose(&self) -> Vec<MoveVerbose> {
+        let moves_verbose: Vec<MoveVerbose> = self
             .history
             .iter()
             .rev()
-            .map(|history_entry| -> Result<MoveVerbose, String> {
+            .map(|history_entry| {
                 let internal_move = history_entry.internal_move;
 
                 let promotion: Option<String> =
@@ -714,30 +698,23 @@ impl WasmChess {
                 let captured_piece: Option<String> =
                     internal_move.capture().map(|val| val.char().to_string());
 
-                let san_move = San::from_move(&history_entry.position, internal_move);
+                let san_move = San::from_move(&history_entry.position_before, internal_move);
 
-                if !chess.is_legal(internal_move) {
-                    println!("ILLEGAL {}", san_move);
-                } else {
-                    println!("LEGAL SAN {}", san_move);
-                }
-
-                chess.play_unchecked(internal_move);
-
-                let fen_after = Fen::from_position(&chess, shakmaty::EnPassantMode::Legal);
+                let fen_after = Fen::from_position(
+                    &history_entry.position_after,
+                    shakmaty::EnPassantMode::Legal,
+                );
                 let color_shorthand = match history_entry.turn {
                     Color::White => ColorChar::W,
                     Color::Black => ColorChar::B,
                 };
 
-                let from_sq = internal_move.from();
+                let from_sq = internal_move
+                    .from()
+                    .expect("Optional only for chess variants");
 
-                if from_sq.is_none() {
-                    return Err("unable to get square info from move".to_string());
-                }
-
-                Ok(MoveVerbose {
-                    from: from_sq.unwrap().to_string(),
+                MoveVerbose {
+                    from: from_sq.to_string(),
                     to: internal_move.to().to_string(),
                     promotion,
                     lan: internal_move
@@ -753,19 +730,15 @@ impl WasmChess {
 
                     is_en_passant: internal_move.is_en_passant(),
                     is_castle: internal_move.is_castle(),
-                })
+                }
             })
             .rev()
             .collect();
 
-        if moves_verbose.is_err() {
-            return Err(moves_verbose.err().unwrap());
-        }
-
-        Ok(moves_verbose.unwrap())
+        moves_verbose
     }
 
-    fn push_history_entry(&mut self, internal_move: Move, fen_before: Fen) {
+    fn push_history_entry(&mut self, internal_move: Move, fen_before: Fen, pos_before: Chess) {
         self.history.push(History {
             internal_move,
             fen: fen_before,
@@ -774,7 +747,8 @@ impl WasmChess {
             half_moves: self.halfmoves(),
             turn: self.chess.turn().other(),
             //  position after the move was played
-            position: self.chess.clone(),
+            position_after: self.chess.clone(),
+            position_before: pos_before,
         });
     }
 

@@ -124,25 +124,6 @@ pub mod test {
     }
 
     #[test]
-    // TODO
-    fn test_history_verbose() {
-        let mut chess = WasmChess::new(None).unwrap();
-
-        chess.make_move("e4").unwrap();
-        chess.make_move("e5").unwrap();
-        chess.make_move("Nf3").unwrap();
-        chess.make_move("Nc6").unwrap();
-        chess.make_move("d4").unwrap();
-        chess.make_move("Nxd4").unwrap();
-
-        let verbose = chess.history_verbose().map_err(|err| {
-            println!("Error getting verbose history: {}", err);
-        });
-
-        verbose.iter().for_each(|el| println!("{:#?}", el));
-    }
-
-    #[test]
     fn test_position_count_for_repetition() {
         let mut chess = WasmChess::new(None).unwrap();
 
@@ -243,21 +224,5 @@ pub mod test {
         assert!(from_shakmaty_lowercase.is_ok());
         assert!(from_shakmaty_default.is_ok());
         assert!(from_shakmaty_uppercase.is_err());
-    }
-
-    #[test]
-    // TODO: delete
-    fn test_bruh() {
-        let fen = "4q2k/2r1r1pn/4P2p/p1p1QR2/P1Bp3P/1P6/5RP1/6K1 w - - 3 35".to_string();
-        let mut chess = WasmChess::new(Some(fen)).unwrap();
-
-        match chess.make_move("Rf3") {
-            Ok(_) => {
-                println!("OK")
-            }
-            Err(err) => {
-                println!("Err: {}", err);
-            }
-        };
     }
 }
