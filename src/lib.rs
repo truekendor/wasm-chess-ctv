@@ -1,7 +1,8 @@
 use std::{collections::HashMap, str::FromStr};
 
 use shakmaty::{
-    Chess, Color, Move, Piece, Position, Square, fen::Fen, san::San, zobrist::Zobrist64,
+    Chess, Color, EnPassantMode, Move, Piece, Position, Square, fen::Fen, san::San,
+    zobrist::Zobrist64,
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -21,10 +22,13 @@ mod tests;
 #[derive(Clone, Debug)]
 struct History {
     internal_move: Move,
-    fen: Fen,
+
     move_number: u32,
     half_moves: u32,
     turn: Color,
+
+    fen_before: Fen,
+    fen_after: Fen,
 
     position_before: Chess,
     position_after: Chess,
@@ -97,11 +101,10 @@ impl WasmChess {
             ));
         }
 
-        let fen_before = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
         let pos_before = self.chess.clone();
 
         self.chess.play_unchecked(internal_move);
-        self.push_history_entry(internal_move, fen_before, pos_before);
+        self.push_history_entry(internal_move, pos_before);
 
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
         *self.position_count.entry(self.hash).or_insert(0) += 1;
@@ -200,7 +203,7 @@ impl WasmChess {
             return None;
         }
 
-        let fen = &self.history[index].fen;
+        let fen = &self.history[index].fen_before;
 
         Some(fen.to_string())
     }
@@ -217,7 +220,7 @@ impl WasmChess {
                 self.position_count.remove(&self.hash);
             }
         }
-        self.chess = last.position_after;
+        self.chess = last.position_before;
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
         self.position_count.entry(self.hash).or_insert(1);
@@ -725,7 +728,7 @@ impl WasmChess {
                     captured: captured_piece,
 
                     color: color_shorthand,
-                    before: history_entry.fen.to_string(),
+                    before: history_entry.fen_before.to_string(),
                     after: fen_after.to_string(),
 
                     is_en_passant: internal_move.is_en_passant(),
@@ -738,17 +741,19 @@ impl WasmChess {
         moves_verbose
     }
 
-    fn push_history_entry(&mut self, internal_move: Move, fen_before: Fen, pos_before: Chess) {
+    fn push_history_entry(&mut self, internal_move: Move, pos_before: Chess) {
         self.history.push(History {
             internal_move,
-            fen: fen_before,
 
             move_number: self.fullmoves(),
             half_moves: self.halfmoves(),
             turn: self.chess.turn().other(),
-            //  position after the move was played
-            position_after: self.chess.clone(),
+
+            fen_before: Fen::from_position(&pos_before, EnPassantMode::Legal),
+            fen_after: Fen::from_position(&self.chess, EnPassantMode::Legal),
+
             position_before: pos_before,
+            position_after: self.chess.clone(),
         });
     }
 
@@ -866,7 +871,7 @@ impl WasmChess {
             .iter()
             .enumerate()
             .for_each(|(index, history_entry)| {
-                let fen_str = history_entry.fen.to_string();
+                let fen_str = history_entry.fen_after.to_string();
 
                 let comment_str = pgn_result.comments_map.get(&fen_str);
                 let suffix: Option<String> = pgn_result.suffix_map.get(&fen_str).cloned();

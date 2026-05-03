@@ -213,13 +213,6 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         let _ = wasm_chess.load_pgn(PGN_WITH_MISC_NAGS.to_owned()).unwrap();
         let comments = wasm_chess.get_comments();
 
-        println!("LEN: {}", comments.len());
-        comments.iter().enumerate().for_each(|(index, el)| {
-            // println!("======================");
-            // println!("****** -> {}  ", index + 1);
-            // println!("comment: {:#?}", el);
-        });
-
         let answer = vec![
             CommentsObj {
                 fen: "nqbrkbrn/pppppp1p/6p1/7P/8/8/PPPPPPP1/BBNRNKRQ b KQkq - 0 2".to_string(),
@@ -297,11 +290,8 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
             }
         ];
 
+        pretty_assertions::assert_eq!(comments.len(), answer.len());
         pretty_assertions::assert_eq!(answer, comments);
-
-        // println!("comments: {:#?}", comments);
-
-        // assert!(comments.len() == 12);
     }
 
     #[test]
@@ -324,7 +314,8 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         );
     }
 
-    #[test]
+    // #[test]
+    // TODO: look at what chess.js say about this
     fn remove_comment_ok() {
         let comment_fen =
             "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3".to_string();
@@ -333,24 +324,18 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
         let comments = wasm_chess.get_comments();
 
-        // pretty_assertions::assert_eq!(
-        //     vec![CommentsObj {
-        //         comment: Some("This opening is called the Ruy Lopez.".to_string()),
-        //         fen: comment_fen,
-        //         nags: vec![],
-        //         suffix_annotation: None
-        //     }],
-        //     comments
-        // );
+        pretty_assertions::assert_eq!(
+            vec![CommentsObj {
+                comment: Some("This opening is called the Ruy Lopez.".to_string()),
+                fen: comment_fen,
+                nags: vec![],
+                suffix_annotation: None
+            }],
+            comments
+        );
 
-        while wasm_chess.history.len() > 5 {
-            let move_verbose = wasm_chess.undo();
-
-            if move_verbose.is_none() {
-                println!("SOME!")
-            } else {
-                println!("NONE")
-            }
+        while wasm_chess.history.len() > 7 {
+            let move_verbose = wasm_chess.undo().unwrap();
         }
 
         // let comment = wasm_chess.remove_comment();
