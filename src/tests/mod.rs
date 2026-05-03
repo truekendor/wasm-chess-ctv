@@ -3,6 +3,7 @@ pub mod castling_rights_tests;
 pub mod fen_tests;
 pub mod find_divergence_test;
 pub mod find_piece_tests;
+pub mod history_tests;
 pub mod is_promotion_tests;
 pub mod native_tests;
 pub mod pgn_tests;

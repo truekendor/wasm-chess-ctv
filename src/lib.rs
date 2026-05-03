@@ -18,7 +18,7 @@ use crate::helpers::{
 mod helpers;
 mod tests;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct History {
     internal_move: Move,
     fen: Fen,
@@ -95,9 +95,10 @@ impl WasmChess {
             ));
         }
 
-        self.push_history_entry(internal_move);
+        let fen_before = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal);
 
         self.chess.play_unchecked(internal_move);
+        self.push_history_entry(internal_move, fen_before);
 
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
         *self.position_count.entry(self.hash).or_insert(0) += 1;
@@ -648,10 +649,6 @@ impl WasmChess {
                 ColorChar::B => {
                     squares.append(&mut b_attackers);
                 }
-                _ => {
-                    squares.append(&mut w_attackers);
-                    squares.append(&mut b_attackers);
-                }
             }
         }
 
@@ -718,6 +715,13 @@ impl WasmChess {
                     internal_move.capture().map(|val| val.char().to_string());
 
                 let san_move = San::from_move(&history_entry.position, internal_move);
+
+                if !chess.is_legal(internal_move) {
+                    println!("ILLEGAL {}", san_move);
+                } else {
+                    println!("LEGAL SAN {}", san_move);
+                }
+
                 chess.play_unchecked(internal_move);
 
                 let fen_after = Fen::from_position(&chess, shakmaty::EnPassantMode::Legal);
@@ -761,50 +765,15 @@ impl WasmChess {
         Ok(moves_verbose.unwrap())
     }
 
-    // TODO add tests and replace history_verbose with this later
-    // // #[wasm_bindgen(js_name = "historyVerboseDEV")]
-    // fn history_verbose_dev(&self) -> Result<Vec<MoveVerbose>, String> {
-    //     if self.history.len() == 0 {
-    //         return Ok(vec![]);
-    //     }
-
-    //     let moves_verbose: Result<Vec<MoveVerbose>, String> = self
-    //         .history
-    //         .iter()
-    //         .rev()
-    //         .map(|history_entry| -> Result<MoveVerbose, String> {
-    //             let move_verbose = helpers::parsing::verbose_move_object_from_internal_move(
-    //                 history_entry.internal_move,
-    //                 &history_entry.position,
-    //             ).map_err(|err| {
-    //                 return format!("Error converting move to verbose move object\nError message: {}\nMove: {}\nPosition FEN: {}",
-    //                     err,
-    //                     history_entry.internal_move.to_string(),
-    //                     history_entry.fen.to_string()
-    //                 );
-    //             })?;
-
-    //             Ok(move_verbose)
-
-    //         })
-    //         .rev()
-    //         .collect();
-
-    //     if moves_verbose.is_err() {
-    //         return Err(moves_verbose.err().unwrap());
-    //     }
-
-    //     Ok(moves_verbose.unwrap())
-    // }
-
-    fn push_history_entry(&mut self, internal_move: Move) {
+    fn push_history_entry(&mut self, internal_move: Move, fen_before: Fen) {
         self.history.push(History {
             internal_move,
-            fen: Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal),
+            fen: fen_before,
 
             move_number: self.fullmoves(),
             half_moves: self.halfmoves(),
-            turn: self.chess.turn(),
+            turn: self.chess.turn().other(),
+            //  position after the move was played
             position: self.chess.clone(),
         });
     }
@@ -860,40 +829,6 @@ impl WasmChess {
         };
     }
 
-    // TODO: suffix annotations not working for now
-    #[wasm_bindgen(js_name = "getComments")]
-    pub fn get_comments(&mut self) -> Vec<CommentsObj> {
-        let mut comments_vec: Vec<CommentsObj> = vec![];
-
-        if self.pgn_result.is_none() {
-            return comments_vec;
-        }
-
-        let pgn_result = self.pgn_result.as_ref().unwrap();
-
-        self.history.iter().for_each(|el| {
-            let fen_str = el.fen.to_string();
-
-            let comments = pgn_result.comments_map.get(&fen_str);
-            let nags = match pgn_result.nag_map.get(&fen_str) {
-                Some(val) => val.clone(),
-                None => vec![],
-            };
-            let suffix: Option<String> = None;
-
-            if comments.is_some() || suffix.is_some() {
-                comments_vec.push(CommentsObj {
-                    fen: fen_str,
-                    comment: comments.cloned(),
-                    suffix_annotation: suffix,
-                    nags,
-                });
-            }
-        });
-
-        comments_vec
-    }
-
     #[wasm_bindgen(js_name = "setHeader")]
     pub fn set_header(&mut self, key: String, value: String) -> HeadersObj {
         if self.pgn_result.is_none() {
@@ -922,7 +857,74 @@ impl WasmChess {
         return false;
     }
 
-    fn set_comment(&self, comment: String) {
-        todo!()
+    #[wasm_bindgen(js_name = "removeComment")]
+    pub fn remove_comment(&mut self) -> Option<String> {
+        if self.pgn_result.is_none() {
+            return None;
+        }
+
+        let current_fen = self.fen(None);
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        let comment = pgn_result.comments_map.get(&current_fen).cloned();
+
+        if comment.is_none() {
+            return None;
+        };
+
+        pgn_result.comments_map.remove(&current_fen);
+
+        comment
+    }
+
+    // TODO: suffix annotations not working for now
+    #[wasm_bindgen(js_name = "getComments")]
+    pub fn get_comments(&mut self) -> Vec<CommentsObj> {
+        let mut comments_vec: Vec<CommentsObj> = vec![];
+
+        if self.pgn_result.is_none() {
+            return comments_vec;
+        }
+
+        let pgn_result = self.pgn_result.as_ref().unwrap();
+
+        self.history
+            .iter()
+            .enumerate()
+            .for_each(|(index, history_entry)| {
+                let fen_str = history_entry.fen.to_string();
+
+                let comment_str = pgn_result.comments_map.get(&fen_str);
+                let suffix: Option<String> = pgn_result.suffix_map.get(&fen_str).cloned();
+                let nags = match pgn_result.nag_map.get(&fen_str) {
+                    Some(val) => val.clone(),
+                    None => vec![],
+                };
+
+                if comment_str.is_some() || suffix.is_some() || nags.len() > 0 {
+                    comments_vec.push(CommentsObj {
+                        fen: fen_str,
+                        comment: comment_str.cloned(),
+                        suffix_annotation: suffix,
+                        nags,
+                    });
+                }
+            });
+
+        comments_vec
+    }
+
+    #[wasm_bindgen(js_name = "setComment")]
+    pub fn set_comment(&mut self, comment: String) {
+        if self.pgn_result.is_none() {
+            self.pgn_result = Some(PGNResult::default());
+        }
+
+        let fen = self.fen(None);
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        pgn_result
+            .comments_map
+            .insert(fen, comment.replace('{', "[").replace('}', "]"));
     }
 }

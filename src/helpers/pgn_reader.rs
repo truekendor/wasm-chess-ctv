@@ -11,9 +11,11 @@ pub struct PGNResult {
     pub starting_fen: Fen,
 
     pub comments_map: HashMap<String, String>,
+    pub suffix_map: HashMap<String, String>,
     pub nag_map: HashMap<String, Vec<String>>,
-    // pub suffix_map: HashMap<String, String>,
 }
+
+const SUFFIX_LIST: [&str; 6] = ["!", "?", "!!", "??", "!?", "?!"];
 
 impl Visitor for PGNResult {
     type Tags = ();
@@ -21,6 +23,10 @@ impl Visitor for PGNResult {
     type Output = Result<WasmChess, String>;
 
     fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
+        self.comments_map = HashMap::new();
+        self.suffix_map = HashMap::new();
+        self.nag_map = HashMap::new();
+
         ControlFlow::Continue(())
     }
 
@@ -86,7 +92,30 @@ impl Visitor for PGNResult {
         let fen_key =
             Fen::from_position(&wasm_chess.chess, shakmaty::EnPassantMode::Legal).to_string();
 
-        // self.nag_map.insert(fen_key, nag).o;
+        let nag_str = nag.as_str();
+        match nag_str {
+            "$1" | "$2" | "$3" | "$4" | "$5" | "$6" => {
+                let last_char = nag_str.chars().last().unwrap();
+
+                let number = last_char.to_digit(10);
+
+                if let Some(suffix_number) = number {
+                    let suffix_number = suffix_number - 1;
+
+                    if suffix_number >= SUFFIX_LIST.len() as u32 {
+                        return ControlFlow::Continue(());
+                    }
+
+                    let char = SUFFIX_LIST[suffix_number as usize];
+
+                    self.suffix_map.insert(fen_key.clone(), char.to_owned());
+                }
+
+                return ControlFlow::Continue(());
+            }
+            _ => (),
+        }
+
         self.nag_map.entry(fen_key).or_insert(Vec::new()).push(nag);
 
         ControlFlow::Continue(())

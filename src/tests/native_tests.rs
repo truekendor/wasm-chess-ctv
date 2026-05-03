@@ -244,4 +244,20 @@ pub mod test {
         assert!(from_shakmaty_default.is_ok());
         assert!(from_shakmaty_uppercase.is_err());
     }
+
+    #[test]
+    // TODO: delete
+    fn test_bruh() {
+        let fen = "4q2k/2r1r1pn/4P2p/p1p1QR2/P1Bp3P/1P6/5RP1/6K1 w - - 3 35".to_string();
+        let mut chess = WasmChess::new(Some(fen)).unwrap();
+
+        match chess.make_move("Rf3") {
+            Ok(_) => {
+                println!("OK")
+            }
+            Err(err) => {
+                println!("Err: {}", err);
+            }
+        };
+    }
 }
