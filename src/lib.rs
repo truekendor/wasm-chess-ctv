@@ -691,7 +691,6 @@ impl WasmChess {
         let moves_verbose: Vec<MoveVerbose> = self
             .history
             .iter()
-            .rev()
             .map(|history_entry| {
                 let internal_move = history_entry.internal_move;
 
@@ -735,7 +734,6 @@ impl WasmChess {
                     is_castle: internal_move.is_castle(),
                 }
             })
-            .rev()
             .collect();
 
         moves_verbose
