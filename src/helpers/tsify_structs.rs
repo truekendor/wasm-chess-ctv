@@ -113,7 +113,7 @@ pub enum ColorChar {
     B,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub enum PieceSymbol {
@@ -123,6 +123,19 @@ pub enum PieceSymbol {
     R,
     Q,
     K,
+}
+
+impl PieceSymbol {
+    pub fn from_shakmaty_piece(piece: &shakmaty::Piece) -> Self {
+        match piece.role {
+            shakmaty::Role::Pawn => PieceSymbol::P,
+            shakmaty::Role::Knight => PieceSymbol::N,
+            shakmaty::Role::Bishop => PieceSymbol::B,
+            shakmaty::Role::Rook => PieceSymbol::R,
+            shakmaty::Role::Queen => PieceSymbol::Q,
+            shakmaty::Role::King => PieceSymbol::K,
+        }
+    }
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize)]
@@ -183,4 +196,23 @@ impl SuffixSymbol {
             _ => false,
         }
     }
+}
+
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct SquareInfoObj {
+    pub square: SquareStr,
+    pub r#type: PieceSymbol,
+    pub color: ColorChar,
+}
+
+pub type BoardMatrixRow = Vec<Option<SquareInfoObj>>;
+pub type BoardMatrix = Vec<BoardMatrixRow>;
+
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardMatrixReturnObj {
+    pub board_matrix: BoardMatrix,
 }

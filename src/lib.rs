@@ -12,8 +12,9 @@ use crate::helpers::{
     parsing,
     pgn_reader::PGNResult,
     tsify_structs::{
-        CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject, MoveVerbose,
-        OkOrError, PieceObj, PieceSymbol, PrunedCommentsObj, SquareColor, SquareStr, SuffixSymbol,
+        BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, CastlingObj, ColorChar, CommentsObj,
+        HeadersObj, MoveFromSquares, MoveObject, MoveVerbose, OkOrError, PieceObj, PieceSymbol,
+        PrunedCommentsObj, SquareColor, SquareInfoObj, SquareStr, SuffixSymbol,
     },
 };
 
@@ -24,8 +25,8 @@ mod tests;
 struct History {
     internal_move: Move,
 
-    move_number: u32,
-    half_moves: u32,
+    // move_number: u32,
+    // half_moves: u32,
     turn: Color,
 
     fen_before: Fen,
@@ -611,19 +612,44 @@ impl WasmChess {
             .unwrap_or(false)
     }
 
-    // TODO: idk what chess.js does
-    pub fn board(&self) -> Vec<String> {
-        Square::ALL
-            .iter()
-            .map(|sq| {
-                let piece = self.chess.board().piece_at(*sq);
+    pub fn board(&self) -> BoardMatrixReturnObj {
+        let mut result: BoardMatrix = Vec::with_capacity(8);
 
-                match piece {
-                    Some(p) => p.char().to_string(),
-                    None => " ".to_string(),
-                }
-            })
-            .collect::<Vec<String>>()
+        for rank in (1..=8).rev() {
+            let mut row: BoardMatrixRow = Vec::with_capacity(8);
+
+            for file in 'a'..='h' {
+                let square_str = format!("{}{}", file, rank);
+                let square = square_str.parse::<SquareStr>().unwrap(); // Safe because format is correct
+
+                let shakmaty_square = Square::from_str(&square_str).unwrap();
+                let piece = self.chess.board().piece_at(shakmaty_square);
+
+                let square_info = match piece {
+                    Some(p) => {
+                        let color = match p.color {
+                            Color::White => ColorChar::W,
+                            Color::Black => ColorChar::B,
+                        };
+
+                        Some(SquareInfoObj {
+                            color,
+                            square,
+                            r#type: PieceSymbol::from_shakmaty_piece(&p),
+                        })
+                    }
+                    None => None,
+                };
+
+                row.push(square_info);
+            }
+
+            result.push(row);
+        }
+
+        BoardMatrixReturnObj {
+            board_matrix: result,
+        }
     }
 
     pub fn ascii(&self) -> String {
@@ -800,8 +826,8 @@ impl WasmChess {
         self.history.push(History {
             internal_move,
 
-            move_number: self.fullmoves(),
-            half_moves: self.halfmoves(),
+            // move_number: self.fullmoves(),
+            // half_moves: self.halfmoves(),
             turn: self.chess.turn().other(),
 
             fen_before: Fen::from_position(&pos_before, EnPassantMode::Legal),
@@ -1075,7 +1101,6 @@ impl WasmChess {
 
     // TODO: add custom types like type Suffix = String to avoid confusion
     #[wasm_bindgen(js_name = "setSuffixAnnotation")]
-
     pub fn set_suffix_annotation(
         &mut self,
         suffix: &str,
