@@ -1,12 +1,12 @@
 use ordermap::OrderMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use strum::{Display, EnumString, IntoStaticStr};
 
 #[derive(tsify::Tsify, Serialize, Deserialize)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct HeadersObj {
+    #[tsify(type = "Map<string, string>")]
     pub headers_data: OrderMap<String, String>,
 }
 
@@ -130,4 +130,12 @@ pub enum PieceSymbol {
 pub struct PieceObj {
     pub r#type: PieceSymbol,
     pub color: ColorChar,
+}
+
+// this is like a custom result
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+pub struct OkOrError<T> {
+    pub ok: Option<T>,
+    pub err: Option<String>,
 }

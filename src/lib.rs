@@ -13,7 +13,7 @@ use crate::helpers::{
     pgn_reader::PGNResult,
     tsify_structs::{
         CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject, MoveVerbose,
-        PieceObj, PieceSymbol, PrunedCommentsObj, SquareColor, SquareStr,
+        OkOrError, PieceObj, PieceSymbol, PrunedCommentsObj, SquareColor, SquareStr,
     },
 };
 
@@ -313,6 +313,45 @@ impl WasmChess {
                     None
                 }
             }
+        }
+    }
+
+    // TODO: write tests
+    #[wasm_bindgen(js_name = "isAttacked")]
+    pub fn is_attacked(&self, square: SquareStr, attacked_by_side: Option<ColorChar>) -> bool {
+        let Ok(square) = Square::from_str(&square.to_string().to_lowercase()) else {
+            return false;
+        };
+
+        let get_attackers = |color: Color| -> Vec<Square> {
+            self.chess
+                .board()
+                .attacks_to(square, color, self.chess.board().by_color(color))
+                .into_iter()
+                .collect()
+        };
+
+        match attacked_by_side {
+            Some(ColorChar::W) => !get_attackers(Color::White).is_empty(),
+            Some(ColorChar::B) => !get_attackers(Color::Black).is_empty(),
+            None => {
+                let turn = self.chess.turn();
+                !get_attackers(turn).is_empty()
+            }
+        }
+    }
+
+    // TODO: make static/move to some other mod?
+    pub fn fen_is_valid(&self, fen: String) -> OkOrError<String> {
+        match fen.parse::<Fen>() {
+            Ok(fen) => OkOrError {
+                ok: Some(fen.to_string()),
+                err: None,
+            },
+            Err(err) => OkOrError {
+                ok: None,
+                err: Some(err.to_string()),
+            },
         }
     }
 
