@@ -45,7 +45,7 @@ pub enum SquareColor {
     Dark,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[derive(tsify::Tsify, Serialize, Deserialize, PartialEq, Debug)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct MoveObject {
     pub from: SquareStr,

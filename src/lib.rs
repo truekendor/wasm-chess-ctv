@@ -198,19 +198,20 @@ impl WasmChess {
         fen.to_string()
     }
 
-    /// Returns the FEN string at a specific move index.
+    // more docs because this method not present in chess.js
+    /// ## Returns the FEN string at a specific move index.
     ///
-    /// # Parameters
+    /// ## Parameters
     /// * `index` - The move index (0-based):
     ///   - `0` - Starting position (before any moves)
     ///   - `1` - Position after first move
     ///   - `2` - Position after second move, etc.
     ///
-    /// # Returns
+    /// ## Returns
     /// * `Some(String)` - The FEN string at the requested position
     /// * `None` - If `index` exceeds total moves played
     ///
-    /// # Example
+    /// ## Example
     /// ```
     /// assert!(chess.fen_at(0).is_some());  // Starting position always available
     /// assert_eq!(chess.fen_at(0), Some("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string())); // starting position
@@ -232,6 +233,82 @@ impl WasmChess {
             idx => {
                 if idx <= self.history.len() {
                     Some(self.history[idx - 1].fen_after.to_string())
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    // TODO: write test for it
+    /// Returns the move at a specific index.
+    ///
+    /// # Parameters
+    /// * `index` - The move index (0-based):
+    ///   - `0` - Returns `None` (no move at starting position)
+    ///   - `1` - First move played
+    ///   - `2` - Second move played, etc.
+    ///
+    /// # Returns
+    /// * `Some(MoveObject)` - The move at the requested index
+    /// * `None` - If `index` is 0 or exceeds total moves played
+    #[wasm_bindgen(js_name = "moveAt")]
+    pub fn move_at(&self, index: usize) -> Option<MoveObject> {
+        match index {
+            0 => None,
+            idx if idx <= self.history.len() => {
+                let history_entry = &self.history[idx - 1];
+                let internal_move = history_entry.internal_move;
+                let promotion = internal_move.promotion().map(|m| m.char().to_string());
+
+                let from = internal_move.from()?;
+                let to = internal_move.to();
+
+                let from = from.to_string().to_lowercase().parse::<SquareStr>().ok()?;
+                let to = to.to_string().to_lowercase().parse::<SquareStr>().ok()?;
+
+                Some(MoveObject {
+                    from,
+                    to,
+                    promotion,
+                })
+            }
+            _ => None,
+        }
+    }
+
+    // TODO: write tests for it
+    /// Returns which side to move at a specific index.
+    ///
+    /// # Parameters
+    /// * `index` - The position index (0-based):
+    ///   - `0` - Starting position (White's turn for default starting position)
+    ///   - `1` - Turn after first move (Black's turn for default starting position)
+    ///   - `2` - Turn after second move, etc.
+    ///
+    /// # Returns
+    /// * `Some(ColorChar)` - The side to move at the requested position
+    /// * `None` - If `index` exceeds total history length
+    #[wasm_bindgen(js_name = "turnAt")]
+    pub fn turn_at(&self, index: usize) -> Option<ColorChar> {
+        match index {
+            0 => {
+                let turn = match self.history.is_empty() {
+                    false => self.history[0].turn,
+                    true => self.chess.turn(),
+                };
+                Some(match turn {
+                    Color::White => ColorChar::W,
+                    Color::Black => ColorChar::B,
+                })
+            }
+            idx => {
+                if idx <= self.history.len() {
+                    let turn = self.history[idx - 1].turn;
+                    Some(match turn {
+                        Color::White => ColorChar::B,
+                        Color::Black => ColorChar::W,
+                    })
                 } else {
                     None
                 }
@@ -296,7 +373,6 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "moveNumber")]
-    /// same as wasm_chess.fullmoves()
     pub fn move_number(&self) -> u32 {
         return self.fullmoves();
     }
@@ -313,41 +389,6 @@ impl WasmChess {
 
     pub fn length(&self) -> u32 {
         return self.history.len() as u32;
-    }
-
-    // TODO: custom CTV function?
-    // #[wasm_bindgen(js_name = "turnAt")]
-    fn turn_at(&self, index: usize) -> u32 {
-        if index as u32 >= self.length() {
-            return 0;
-        }
-
-        return 0;
-    }
-
-    // TODO: custom CTV function?
-    // TODO: change to Result<MoveObject, String?>
-    // #[wasm_bindgen(js_name = "moveAt")]
-    fn move_at(&self, index: usize) -> Option<MoveObject> {
-        // TODO: index == 0 is fine? Check if 0 should be valid or not
-        if index == 0 || index as u32 >= self.length() {
-            return None;
-        }
-
-        let internal_move = &self.history[index].internal_move;
-        let promotion = internal_move.promotion().map(|m| m.char().to_string());
-
-        let from = internal_move.from()?;
-        let to = internal_move.to();
-
-        let from = from.to_string().to_lowercase().parse::<SquareStr>().ok()?;
-        let to = to.to_string().to_lowercase().parse::<SquareStr>().ok()?;
-
-        Some(MoveObject {
-            from,
-            to,
-            promotion,
-        })
     }
 
     #[wasm_bindgen(js_name = "squareColor")]
