@@ -63,7 +63,7 @@ pub struct CastlingObj {
     pub queen: bool,
 }
 
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub enum ColorChar {

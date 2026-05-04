@@ -704,11 +704,12 @@ impl WasmChess {
     }
 
     // TODO: port chess js tests for this bad boy
-    pub fn attackers(
+    #[wasm_bindgen(js_name = "attackersUnblocked")]
+    pub fn attackers_unblocked(
         &self,
         square: SquareStr,
         attacked_by_side: Option<ColorChar>,
-    ) -> Result<Vec<String>, String> {
+    ) -> Vec<String> {
         let square = square.to_shakmaty_sq();
 
         let get_attackers = |color: Color| -> Vec<Square> {
@@ -731,7 +732,41 @@ impl WasmChess {
             Some(ColorChar::B) => b_attackers,
         };
 
-        Ok(squares.into_iter().map(|el| el.to_string()).collect())
+        squares.into_iter().map(|el| el.to_string()).collect()
+    }
+
+    #[wasm_bindgen(js_name = "attackersBlocked")]
+    pub fn attackers_blocked(
+        &self,
+        square: SquareStr,
+        attacked_by_side: Option<ColorChar>,
+    ) -> Vec<SquareStr> {
+        let square = square.to_shakmaty_sq();
+
+        let get_attackers = |color: Color| -> Vec<Square> {
+            self.chess
+                .board()
+                .attacks_to(square, color, self.chess.board().by_color(color))
+                .into_iter()
+                .collect()
+        };
+
+        let w_attackers = get_attackers(Color::White);
+        let b_attackers = get_attackers(Color::Black);
+
+        let squares = match attacked_by_side {
+            None => match self.chess.turn() {
+                Color::White => w_attackers,
+                Color::Black => b_attackers,
+            },
+            Some(ColorChar::W) => w_attackers,
+            Some(ColorChar::B) => b_attackers,
+        };
+
+        squares
+            .into_iter()
+            .map(|sq| SquareStr::from_shakmaty_sq(&sq))
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "historySAN")]

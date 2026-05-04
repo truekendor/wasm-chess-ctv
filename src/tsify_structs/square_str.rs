@@ -3,7 +3,7 @@ use strum::{Display, EnumString, IntoStaticStr};
 
 // copy of a shakmaty's Square enum but with derived tsify types
 #[rustfmt::skip]
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug, Display, EnumString, IntoStaticStr, PartialEq, Eq)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, Display, EnumString, IntoStaticStr, PartialEq, Eq, Clone)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 #[strum(serialize_all = "camelCase")]
