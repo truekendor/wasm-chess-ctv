@@ -13,7 +13,7 @@ use crate::helpers::{
     pgn_reader::PGNResult,
     tsify_structs::{
         CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject, MoveVerbose,
-        OkOrError, PieceObj, PieceSymbol, PrunedCommentsObj, SquareColor, SquareStr,
+        OkOrError, PieceObj, PieceSymbol, PrunedCommentsObj, SquareColor, SquareStr, SuffixSymbol,
     },
 };
 
@@ -44,6 +44,13 @@ pub struct WasmChess {
     // TODO: rename
     pgn_result: Option<PGNResult>,
 }
+
+// TODO: use them
+pub type FenString = String;
+pub type SuffixString = String;
+
+// todo: make nag u8/u16/u32 number ??
+pub type NAGString = String;
 
 // TODO: add docs
 
@@ -981,6 +988,7 @@ impl WasmChess {
         return None;
     }
 
+    // TODO: add tests for nags ?
     #[wasm_bindgen(js_name = "getNags")]
     pub fn get_nags(&self, fen: Option<String>) -> Vec<String> {
         let Some(pgn_result) = self.pgn_result.as_ref() else {
@@ -1052,5 +1060,45 @@ impl WasmChess {
         let removed = pgn_result.nag_map.remove(&fen_key);
 
         removed.unwrap_or_else(|| Vec::new())
+    }
+
+    #[wasm_bindgen(js_name = "getSuffixAnnotation")]
+    pub fn get_suffix_annotation(&self, fen: Option<String>) -> Option<SuffixString> {
+        let fen_key = fen.unwrap_or_else(|| self.fen(None));
+
+        let Some(pgn_result) = self.pgn_result.as_ref() else {
+            return None;
+        };
+
+        pgn_result.suffix_map.get(&fen_key).cloned()
+    }
+
+    // TODO: add custom types like type Suffix = String to avoid confusion
+    #[wasm_bindgen(js_name = "setSuffixAnnotation")]
+
+    pub fn set_suffix_annotation(
+        &mut self,
+        suffix: &str,
+        fen: Option<FenString>,
+    ) -> Result<(), String> {
+        let fen_key = fen.unwrap_or_else(|| self.fen(None));
+
+        if !SuffixSymbol::str_is_valid_suffix(&suffix) {
+            return Err(format!("Provided suffix is invalid: {}", suffix));
+        };
+
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+        pgn_result.suffix_map.insert(fen_key, suffix.to_string());
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "removeSuffixAnnotation")]
+    pub fn remove_suffix_annotation(&mut self, fen: Option<FenString>) -> Option<SuffixString> {
+        let fen_key = fen.unwrap_or_else(|| self.fen(None));
+
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+
+        pgn_result.suffix_map.remove(&fen_key)
     }
 }
