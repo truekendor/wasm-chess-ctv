@@ -75,12 +75,12 @@ mod undo_logic_test {
         chess.make_move("e7e5").unwrap();
 
         pretty_assertions::assert_eq!(chess.history.len(), 2);
-        pretty_assertions::assert_eq!(chess.position_count.len(), 3);
+        pretty_assertions::assert_eq!(chess.repetition_table.len(), 3);
 
         let undo_result = chess.undo();
 
         pretty_assertions::assert_eq!(chess.history.len(), 1);
-        pretty_assertions::assert_eq!(chess.position_count.len(), 2);
+        pretty_assertions::assert_eq!(chess.repetition_table.len(), 2);
 
         pretty_assertions::assert_eq!(undo_result.unwrap().san, "e5".to_string());
         pretty_assertions::assert_eq!(chess.turn(), ColorChar::B);
@@ -101,6 +101,6 @@ mod undo_logic_test {
 
         pretty_assertions::assert_eq!(chess.history.len(), 0);
         // we always have starting position in position count, so it should never be 0
-        pretty_assertions::assert_eq!(chess.position_count.len(), 1);
+        pretty_assertions::assert_eq!(chess.repetition_table.len(), 1);
     }
 }

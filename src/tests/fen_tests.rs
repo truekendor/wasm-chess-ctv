@@ -137,7 +137,8 @@ pub mod fen_tests {
         assert!(wasm_chess.fen_at(usize::MAX).is_none());
     }
 
-    /// this test and tests below are taken from chess.js test suite to verify that the FEN output is consistent with chess.js
+    /// tests from this module are taken from chess.js test suite for fen()
+    /// to verify that the FEN output is consistent with chess.js
     ///
     ///  @link https://github.com/jhlywa/chess.js/blob/master/__tests__/fen.test.ts
     pub mod chess_js_fen_tests {

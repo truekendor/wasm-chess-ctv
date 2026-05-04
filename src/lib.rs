@@ -25,7 +25,7 @@ mod tsify_structs;
 
 #[derive(Clone, Debug)]
 struct History {
-    internal_move: Move,
+    raw_move: Move,
 
     // move_number: u32,
     // half_moves: u32,
@@ -43,7 +43,7 @@ pub struct WasmChess {
     chess: Chess,
     history: Vec<History>,
     hash: Zobrist64,
-    position_count: HashMap<Zobrist64, i32>,
+    repetition_table: HashMap<Zobrist64, i32>,
     // TODO: rename
     pgn_result: Option<PGNResult>,
 }
@@ -90,12 +90,12 @@ impl WasmChess {
 
         let zobrist_hash: Zobrist64 = chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
-        let position_count: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
+        let repetition_table: HashMap<Zobrist64, i32> = HashMap::from([(zobrist_hash, 1)]);
 
         Ok(WasmChess {
             chess: chess,
             hash: zobrist_hash,
-            position_count,
+            repetition_table,
             history: vec![],
             pgn_result: None,
         })
@@ -103,6 +103,7 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "move")]
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
+        // pub fn make_move(&mut self, move_str: &str) -> Result<MoveVerbose, String> {
         let internal_move =
             helpers::parsing::str_to_move(move_str, &self.chess).map_err(|err| {
                 return err.to_string();
@@ -122,13 +123,20 @@ impl WasmChess {
         self.push_history_entry(internal_move, pos_before);
 
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
-        *self.position_count.entry(self.hash).or_insert(0) += 1;
+        *self.repetition_table.entry(self.hash).or_insert(0) += 1;
 
         return Ok(());
     }
 
+    // TODO: implement later. returns a position as if the move was played without mutating
+    // current state
+    fn next_position(&self) {
+        //
+    }
+
     #[wasm_bindgen(js_name = "moveFromObj")]
     pub fn make_move_from_obj(&mut self, move_obj: MoveObject) -> Result<(), String> {
+        // pub fn make_move_from_obj(&mut self, move_obj: MoveObject) -> Result<MoveVerbose, String> {
         let mut uci_str = format!("{}{}", move_obj.from, move_obj.to);
 
         match move_obj.promotion {
@@ -158,20 +166,14 @@ impl WasmChess {
         self.reset_history();
 
         let fen: Fen = starting_fen.parse::<Fen>().map_err(|err| {
-            return format!(
-                "Error parsing fen string\nError message: {}\n«{}» is not a valid fen",
-                err, starting_fen
-            );
+            return format!("Invalid FEN '{starting_fen}': {err}");
         })?;
 
         self.chess = fen
             .clone()
             .into_position(shakmaty::CastlingMode::Chess960)
             .map_err(|err| {
-                return format!(
-                    "Error converting FEN into chess position\nError message: {}\nFEN: {}",
-                    err, fen
-                );
+                return format!("Error {err}\nFEN: {fen}");
             })?;
 
         self.reset_pos_count_and_hash();
@@ -193,8 +195,8 @@ impl WasmChess {
         let zobrist_hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
         self.hash = zobrist_hash;
-        self.position_count.clear();
-        self.position_count.insert(zobrist_hash, 1);
+        self.repetition_table.clear();
+        self.repetition_table.insert(zobrist_hash, 1);
     }
 
     pub fn fen(&self, force_en_passant_square: Option<bool>) -> String {
@@ -268,7 +270,7 @@ impl WasmChess {
             0 => None,
             idx if idx <= self.history.len() => {
                 let history_entry = &self.history[idx - 1];
-                let internal_move = history_entry.internal_move;
+                let internal_move = history_entry.raw_move;
                 let promotion = internal_move.promotion().map(|m| m.char().to_string());
 
                 let from = internal_move.from()?;
@@ -369,23 +371,20 @@ impl WasmChess {
             None => return None,
         };
 
-        if let Some(count) = self.position_count.get_mut(&self.hash) {
+        if let Some(count) = self.repetition_table.get_mut(&self.hash) {
             *count -= 1;
             if *count <= 0 {
-                self.position_count.remove(&self.hash);
+                self.repetition_table.remove(&self.hash);
             }
         }
         self.chess = last.position_before;
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
 
-        self.position_count.entry(self.hash).or_insert(1);
+        self.repetition_table.entry(self.hash).or_insert(1);
 
         let move_verbose: Option<MoveVerbose> =
-            helpers::parsing::verbose_move_object_from_internal_move(
-                last.internal_move,
-                &self.chess,
-            )
-            .ok();
+            helpers::parsing::verbose_move_object_from_internal_move(last.raw_move, &self.chess)
+                .ok();
 
         move_verbose
     }
@@ -517,7 +516,8 @@ impl WasmChess {
         Ok(squares_with_piece)
     }
 
-    pub fn hash(&self) -> u64 {
+    #[wasm_bindgen(js_name = "zobristHash")]
+    pub fn zobrist_hash(&self) -> u64 {
         return self.hash.0;
     }
 
@@ -574,7 +574,7 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "isThreefoldRepetition")]
     pub fn is_threefold_repetition(&self) -> bool {
-        self.position_count
+        self.repetition_table
             .get(&self.hash)
             .is_some_and(|&val| val >= 3)
     }
@@ -601,7 +601,14 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "isPromotion")]
     pub fn is_promotion(&self, move_obj: MoveFromSquares) -> bool {
-        let move_str = format!("{}{}{}", move_obj.from, move_obj.to, "n");
+        let move_str = {
+            let capacity = 5;
+            let mut s = String::with_capacity(capacity);
+            s.push_str(&move_obj.from.as_str());
+            s.push_str(&move_obj.to.as_str());
+            s.push('n');
+            s
+        };
 
         parsing::str_to_move(&move_str, &self.chess)
             .map(|internal_move| internal_move.is_promotion())
@@ -651,6 +658,7 @@ impl WasmChess {
     pub fn ascii(&self) -> String {
         let border: &str = "   +------------------------+\n";
         let letters: &str = "     a  b  c  d  e  f  g  h\n";
+        let end_of_board_str = "|\n";
         let mut ascii_str = String::with_capacity(328);
 
         ascii_str.push_str(border);
@@ -679,7 +687,7 @@ impl WasmChess {
                 }
             }
 
-            ascii_str.push_str(&format!("|\n"));
+            ascii_str.push_str(&end_of_board_str);
         }
 
         ascii_str.push_str(border);
@@ -745,7 +753,7 @@ impl WasmChess {
         self.history
             .iter()
             .map(|history| {
-                let san_move = San::from_move(&history.position_before, history.internal_move);
+                let san_move = San::from_move(&history.position_before, history.raw_move);
                 san_move.to_string()
             })
             .collect()
@@ -756,7 +764,7 @@ impl WasmChess {
         self.history
             .iter()
             .map(|h| {
-                let uci_move = h.internal_move.to_uci(shakmaty::CastlingMode::Chess960);
+                let uci_move = h.raw_move.to_uci(shakmaty::CastlingMode::Chess960);
 
                 uci_move.to_string()
             })
@@ -769,7 +777,7 @@ impl WasmChess {
             .history
             .iter()
             .map(|history_entry| {
-                let internal_move = history_entry.internal_move;
+                let internal_move = history_entry.raw_move;
 
                 let promotion: Option<String> =
                     internal_move.promotion().map(|val| val.char().to_string());
@@ -819,9 +827,9 @@ impl WasmChess {
         moves_verbose
     }
 
-    fn push_history_entry(&mut self, internal_move: Move, pos_before: Chess) {
+    fn push_history_entry(&mut self, raw_move: Move, pos_before: Chess) {
         self.history.push(History {
-            internal_move,
+            raw_move,
 
             // move_number: self.fullmoves(),
             // half_moves: self.halfmoves(),
@@ -863,7 +871,7 @@ impl WasmChess {
         self.chess = wasm_chess.chess;
         self.hash = wasm_chess.hash;
         self.history = wasm_chess.history;
-        self.position_count = wasm_chess.position_count;
+        self.repetition_table = wasm_chess.repetition_table;
 
         self.pgn_result = Some(pgn_result);
 
