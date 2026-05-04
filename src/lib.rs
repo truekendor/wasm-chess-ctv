@@ -213,6 +213,8 @@ impl WasmChess {
     /// # Example
     /// ```
     /// assert!(chess.fen_at(0).is_some());  // Starting position always available
+    /// assert_eq!(chess.fen_at(0), Some("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string())); // starting position
+    ///
     /// // After 1.e4
     /// assert_eq!(chess.fen_at(1), Some("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1".to_string()));
     /// ```
