@@ -1,5 +1,6 @@
 pub mod ascii_tests;
 pub mod castling_rights_tests;
+pub mod comments_test;
 pub mod fen_tests;
 pub mod find_divergence_test;
 pub mod find_piece_tests;

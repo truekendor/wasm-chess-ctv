@@ -102,7 +102,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         let mut wasm_chess = WasmChess::new(None).unwrap();
         wasm_chess
-            .load_pgn(String::from_utf8(pgn).unwrap())
+            .load_pgn(String::from_utf8(pgn).unwrap().as_str())
             .unwrap();
 
         pretty_assertions::assert_eq!(
@@ -117,7 +117,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(pgn.to_owned()).unwrap();
+        wasm_chess.load_pgn(pgn).unwrap();
         let turn = wasm_chess.turn();
         pretty_assertions::assert_eq!(turn, ColorChar::W);
     }
@@ -128,7 +128,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(pgn.to_owned()).unwrap();
+        wasm_chess.load_pgn(pgn).unwrap();
         let turn = wasm_chess.turn();
         pretty_assertions::assert_eq!(turn, ColorChar::B);
     }
@@ -143,7 +143,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(pgn.to_owned()).unwrap();
+        wasm_chess.load_pgn(pgn).unwrap();
         let turn = wasm_chess.turn();
         pretty_assertions::assert_eq!(turn, ColorChar::W);
     }
@@ -152,7 +152,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     // TODO move to own test file
     fn remove_header_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
-        wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
+        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
 
         // Check before removal
         assert!(
@@ -180,7 +180,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     #[test]
     fn set_header_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
-        wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
+        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
 
         let arbitrary_tag = "MyTag";
 
@@ -210,7 +210,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     fn comments_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        let _ = wasm_chess.load_pgn(PGN_WITH_MISC_NAGS.to_owned()).unwrap();
+        let _ = wasm_chess.load_pgn(PGN_WITH_MISC_NAGS).unwrap();
         let comments = wasm_chess.get_comments();
 
         let answer = vec![
@@ -300,7 +300,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
             "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3".to_string();
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
+        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
         let comments = wasm_chess.get_comments();
 
         pretty_assertions::assert_eq!(
@@ -321,7 +321,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
             "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3".to_string();
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(TEST_PGN_1.to_owned()).unwrap();
+        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
         let comments = wasm_chess.get_comments();
 
         pretty_assertions::assert_eq!(

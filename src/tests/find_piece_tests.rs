@@ -7,8 +7,8 @@ pub mod find_piece_tests {
     fn find_pawns_from_str() {
         let chess = WasmChess::new(None).unwrap();
 
-        let w_pawns = chess.find_piece_from_str("P".to_string()).unwrap();
-        let b_pawns = chess.find_piece_from_str("p".to_string()).unwrap();
+        let w_pawns = chess.find_piece_from_str("P").unwrap();
+        let b_pawns = chess.find_piece_from_str("p").unwrap();
 
         let expected_white: Vec<SquareStr> = vec![
             SquareStr::A2,
@@ -100,7 +100,7 @@ pub mod find_piece_tests {
     fn errors_on_invalid_piece() {
         let chess = WasmChess::new(None).unwrap();
 
-        let bad_piece = chess.find_piece_from_str("bad_piece".to_string());
+        let bad_piece = chess.find_piece_from_str("bad_piece");
 
         assert!(bad_piece.is_err());
     }

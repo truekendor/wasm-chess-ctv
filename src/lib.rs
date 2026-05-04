@@ -1,5 +1,6 @@
-use std::{collections::HashMap, ops::Index, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
+use ordermap::OrderMap;
 use shakmaty::{
     Chess, Color, EnPassantMode, Move, Piece, Position, Square, fen::Fen, san::San,
     zobrist::Zobrist64,
@@ -12,7 +13,7 @@ use crate::helpers::{
     pgn_reader::PGNResult,
     tsify_structs::{
         CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject, MoveVerbose,
-        PieceObj, SquareColor, SquareStr,
+        PieceObj, PrunedCommentsObj, SquareColor, SquareStr,
     },
 };
 
@@ -43,6 +44,8 @@ pub struct WasmChess {
     // TODO: rename
     pgn_result: Option<PGNResult>,
 }
+
+// TODO: find what String can be replaced with &str without lifetime and do it
 
 #[wasm_bindgen]
 impl WasmChess {
@@ -357,7 +360,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "findPieceFromString")]
-    pub fn find_piece_from_str(&self, piece: String) -> Result<Vec<SquareStr>, String> {
+    pub fn find_piece_from_str(&self, piece: &str) -> Result<Vec<SquareStr>, String> {
         let mut squares_with_piece: Vec<SquareStr> = vec![];
 
         let piece = piece.trim();
@@ -532,6 +535,7 @@ impl WasmChess {
         internal_move.is_promotion()
     }
 
+    // TODO: idk what chess.js does
     pub fn board(&self) -> Vec<String> {
         let result: Vec<String> = Square::ALL
             .iter()
@@ -782,7 +786,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "loadPgn")]
-    pub fn load_pgn(&mut self, pgn: String) -> Result<(), String> {
+    pub fn load_pgn(&mut self, pgn: &str) -> Result<(), String> {
         let pgn_headers = helpers::pgn_reader::parse_pgn(pgn);
 
         if let Err(pgn_error) = pgn_headers {
@@ -805,7 +809,7 @@ impl WasmChess {
     pub fn get_headers(&self) -> HeadersObj {
         if self.pgn_result.is_none() {
             return HeadersObj {
-                headers_data: HashMap::new(),
+                headers_data: OrderMap::new(),
             };
         }
 
@@ -822,7 +826,7 @@ impl WasmChess {
 
         match self.pgn_result.as_mut() {
             Some(val) => {
-                val.headers = HashMap::new();
+                val.headers = OrderMap::new();
                 val.headers.insert(key, value);
             }
             None => (),
@@ -862,6 +866,26 @@ impl WasmChess {
         comment
     }
 
+    // #[wasm_bindgen(js_name = "removeComments")]
+    pub fn remove_comments(&mut self) -> Vec<PrunedCommentsObj> {
+        let mut result = vec![];
+
+        if self.pgn_result.is_none() {
+            return result;
+        }
+
+        let pgn_result = self.pgn_result.as_mut().unwrap();
+
+        pgn_result.comments_map.drain(..).for_each(|(key, value)| {
+            result.push(PrunedCommentsObj {
+                fen: key,
+                comment: value,
+            });
+        });
+
+        result
+    }
+
     // TODO: suffix annotations not working for now
     #[wasm_bindgen(js_name = "getComments")]
     pub fn get_comments(&mut self) -> Vec<CommentsObj> {
@@ -873,39 +897,75 @@ impl WasmChess {
 
         let pgn_result = self.pgn_result.as_ref().unwrap();
 
-        self.history
-            .iter()
-            .enumerate()
-            .for_each(|(index, history_entry)| {
-                let fen_str = history_entry.fen_after.to_string();
+        let initial_fen_dev = match self.history.len() {
+            0 => self.fen(None),
+            _ => self.history[0].fen_before.to_string(),
+        };
 
-                let comment_str = pgn_result.comments_map.get(&fen_str);
-                let suffix: Option<String> = pgn_result.suffix_map.get(&fen_str).cloned();
-                let nags = match pgn_result.nag_map.get(&fen_str) {
-                    Some(val) => val.clone(),
-                    None => vec![],
-                };
+        let comment_obj = self.get_comment_object(initial_fen_dev, pgn_result);
 
-                if comment_str.is_some() || suffix.is_some() || nags.len() > 0 {
-                    comments_vec.push(CommentsObj {
-                        fen: fen_str,
-                        comment: comment_str.cloned(),
-                        suffix_annotation: suffix,
-                        nags,
-                    });
-                }
-            });
+        if let Some(comment_obj) = comment_obj {
+            comments_vec.push(comment_obj);
+        }
+
+        if self.history.len() == 0 {
+            return comments_vec;
+        }
+
+        self.history.iter().for_each(|history_entry| {
+            let fen_str = history_entry.fen_after.to_string();
+
+            let comment_obj = self.get_comment_object(fen_str, pgn_result);
+
+            if let Some(comment_obj) = comment_obj {
+                comments_vec.push(comment_obj);
+            }
+        });
 
         comments_vec
     }
 
+    fn get_comment_object(&self, fen_str: String, pgn_result: &PGNResult) -> Option<CommentsObj> {
+        let comment_str = pgn_result.comments_map.get(&fen_str);
+        let suffix: Option<String> = pgn_result.suffix_map.get(&fen_str).cloned();
+        let nags = match pgn_result.nag_map.get(&fen_str) {
+            Some(val) => val.clone(),
+            None => vec![],
+        };
+
+        if comment_str.is_some() || suffix.is_some() || nags.len() > 0 {
+            return Some(CommentsObj {
+                fen: fen_str,
+                comment: comment_str.cloned(),
+                suffix_annotation: suffix,
+                nags,
+            });
+        }
+
+        return None;
+    }
+
+    #[wasm_bindgen(js_name = "getComment")]
+    pub fn get_comment(&self) -> Option<String> {
+        if self.pgn_result.is_none() {
+            return None;
+        }
+
+        let pgn_result = self.pgn_result.as_ref().unwrap();
+
+        let comments = pgn_result.comments_map.get(&self.fen(None));
+
+        comments.cloned()
+    }
+
     #[wasm_bindgen(js_name = "setComment")]
-    pub fn set_comment(&mut self, comment: String) {
+    pub fn set_comment(&mut self, comment: &str) {
         if self.pgn_result.is_none() {
             self.pgn_result = Some(PGNResult::default());
         }
 
         let fen = self.fen(None);
+
         let pgn_result = self.pgn_result.as_mut().unwrap();
 
         pgn_result
@@ -933,7 +993,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "addNag")]
-    pub fn add_nag(&mut self, nag: String, fen: Option<String>) {
+    pub fn add_nag(&mut self, nag: &str, fen: Option<String>) {
         let fen_key = fen.unwrap_or(self.fen(None));
 
         if self.pgn_result.is_none() {
@@ -945,7 +1005,7 @@ impl WasmChess {
         let nags = pgn_result.nag_map.entry(fen_key.clone()).or_insert(vec![]);
 
         if !nags.contains(&fen_key) {
-            nags.push(nag);
+            nags.push(nag.to_string());
         }
     }
 

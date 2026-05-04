@@ -1,3 +1,4 @@
+use ordermap::OrderMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::{Display, EnumString, IntoStaticStr};
@@ -6,7 +7,7 @@ use strum::{Display, EnumString, IntoStaticStr};
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct HeadersObj {
-    pub headers_data: HashMap<String, String>,
+    pub headers_data: OrderMap<String, String>,
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
@@ -70,6 +71,14 @@ pub struct CommentsObj {
     #[tsify(optional)]
     pub suffix_annotation: Option<String>,
     pub nags: Vec<String>,
+}
+
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct PrunedCommentsObj {
+    pub fen: String,
+    pub comment: String,
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]

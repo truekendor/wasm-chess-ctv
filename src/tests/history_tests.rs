@@ -1228,7 +1228,7 @@ pub mod history_test_chess_js {
 
         let mut chess = WasmChess::new(None).unwrap();
 
-        chess.load_pgn(pgn.to_string()).unwrap();
+        chess.load_pgn(pgn).unwrap();
 
         let moves = vec![
             MoveVerbose {

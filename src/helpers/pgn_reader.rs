@@ -1,3 +1,4 @@
+use ordermap::OrderMap;
 use shakmaty::{CastlingMode, Chess, fen::Fen};
 use std::{collections::HashMap, io, ops::ControlFlow};
 
@@ -7,12 +8,12 @@ use crate::WasmChess;
 
 #[derive(Debug, Default, Clone)]
 pub struct PGNResult {
-    pub headers: HashMap<String, String>,
+    pub headers: OrderMap<String, String>,
     pub starting_fen: Fen,
 
-    pub comments_map: HashMap<String, String>,
-    pub suffix_map: HashMap<String, String>,
-    pub nag_map: HashMap<String, Vec<String>>,
+    pub comments_map: OrderMap<String, String>,
+    pub suffix_map: OrderMap<String, String>,
+    pub nag_map: OrderMap<String, Vec<String>>,
 }
 
 const SUFFIX_LIST: [&str; 6] = ["!", "?", "!!", "??", "!?", "?!"];
@@ -23,9 +24,9 @@ impl Visitor for PGNResult {
     type Output = Result<WasmChess, String>;
 
     fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
-        self.comments_map = HashMap::new();
-        self.suffix_map = HashMap::new();
-        self.nag_map = HashMap::new();
+        self.comments_map = OrderMap::new();
+        self.suffix_map = OrderMap::new();
+        self.nag_map = OrderMap::new();
 
         ControlFlow::Continue(())
     }
@@ -149,7 +150,7 @@ impl Visitor for PGNResult {
     }
 }
 
-pub fn parse_pgn(pgn: String) -> Result<(PGNResult, WasmChess), String> {
+pub fn parse_pgn(pgn: &str) -> Result<(PGNResult, WasmChess), String> {
     let mut reader = Reader::new(io::Cursor::new(pgn));
     let mut pgn_headers = PGNResult::default();
 
