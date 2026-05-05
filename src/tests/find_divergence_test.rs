@@ -103,6 +103,7 @@ pub mod diverge_transpose_test {
     }
 
     #[test]
+    // TODO: this is the same test as one above
     fn diverge_last_move() {
         let start_pos =
             Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string();
