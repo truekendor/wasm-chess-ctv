@@ -128,8 +128,9 @@ impl WasmChess {
         return Ok(());
     }
 
-    // TODO: implement later. returns a position as if the move was played without mutating
-    // current state
+    // TODO:
+    // implement later. returns a position as if the move was played
+    // without mutating current state
     fn next_position(&self) {
         //
     }
@@ -602,12 +603,12 @@ impl WasmChess {
     #[wasm_bindgen(js_name = "isPromotion")]
     pub fn is_promotion(&self, move_obj: MoveFromSquares) -> bool {
         let move_str = {
-            let capacity = 5;
-            let mut s = String::with_capacity(capacity);
-            s.push_str(&move_obj.from.as_str());
-            s.push_str(&move_obj.to.as_str());
-            s.push('n');
-            s
+            let capacity = 5; // e7d8q
+            let mut string = String::with_capacity(capacity);
+            string.push_str(&move_obj.from.as_str());
+            string.push_str(&move_obj.to.as_str());
+            string.push('n');
+            string
         };
 
         parsing::str_to_move(&move_str, &self.chess)
@@ -616,13 +617,18 @@ impl WasmChess {
     }
 
     pub fn board(&self) -> BoardMatrixReturnObj {
+        const RANK_STRINGS: [&str; 8] = ["1", "2", "3", "4", "5", "6", "7", "8"];
         let mut result: BoardMatrix = Vec::with_capacity(8);
+        let mut square_str = String::with_capacity(2);
 
         for rank in (1..=8).rev() {
             let mut row: BoardMatrixRow = Vec::with_capacity(8);
 
             for file in 'a'..='h' {
-                let square_str = format!("{}{}", file, rank);
+                square_str.clear();
+                square_str.push(file);
+                square_str.push_str(RANK_STRINGS[rank - 1 as usize]);
+
                 let square = square_str.parse::<SquareStr>().unwrap(); // Safe because format is correct
 
                 let shakmaty_square = SquareStr::to_shakmaty_sq(&square);
