@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod pgn_test {
-    static TEST_PGN_1: &str = r#"[Event "F/S Return Match"]
+    static PGN_FROM_WIKI: &'static str = r#"[Event "F/S Return Match"]
 [Site "Belgrade, Serbia JUG"]
 [Date "1992.11.04"]
 [Round "29"]
@@ -20,7 +20,7 @@ hxg5 29.b3 Ke6 30.a3 Kd6 31.axb4 cxb4 32.Ra5 Nd5 33.f3 Bc8 34.Kf2 Bf5
 35.Ra7 g6 36.Ra6+ Kc5 37.Ke1 Nf4 38.g3 Nxh3 39.Kd2 Kb5 40.Rd6 Kc5 41.Ra6
 Nf2 42.g4 Bd3 43.Re6 1/2-1/2"#;
 
-    static PGN_WITH_MISC_NAGS: &str = r#"
+    static PGN_WITH_NAGS: &'static str = r#"
     [Event "CCC 25 Double-Fischer: Finals"]
 [Site "https://www.chess.com/computer-chess-championship"]
 [Date "2026.03.27"]
@@ -64,7 +64,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
 
     #[test]
     fn headers() {
-        let mut reader = Reader::new(io::Cursor::new(TEST_PGN_1));
+        let mut reader = Reader::new(io::Cursor::new(PGN_FROM_WIKI));
         let mut pgn_parser = PGNResult::default();
         reader.read_game(&mut pgn_parser).unwrap();
 
@@ -148,7 +148,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     // TODO move to own test file
     fn remove_header_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
-        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
+        wasm_chess.load_pgn(PGN_FROM_WIKI).unwrap();
 
         // Check before removal
         assert!(
@@ -176,7 +176,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     #[test]
     fn set_header_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
-        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
+        wasm_chess.load_pgn(PGN_FROM_WIKI).unwrap();
 
         let arbitrary_tag = "MyTag";
 
@@ -206,7 +206,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
     fn comments_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        let _ = wasm_chess.load_pgn(PGN_WITH_MISC_NAGS).unwrap();
+        let _ = wasm_chess.load_pgn(PGN_WITH_NAGS).unwrap();
         let comments = wasm_chess.get_comments();
 
         let answer = vec![
@@ -296,7 +296,7 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
             "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3".to_string();
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
+        wasm_chess.load_pgn(PGN_FROM_WIKI).unwrap();
         let comments = wasm_chess.get_comments();
 
         pretty_assertions::assert_eq!(
@@ -310,14 +310,13 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         );
     }
 
-    // #[test]
-    // TODO: look at what chess.js say about this
-    fn remove_comment_ok() {
+    #[test]
+    fn remove_comment_from_pgn_ok() {
         let comment_fen =
             "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3".to_string();
         let mut wasm_chess = WasmChess::new(None).unwrap();
 
-        wasm_chess.load_pgn(TEST_PGN_1).unwrap();
+        wasm_chess.load_pgn(PGN_FROM_WIKI).unwrap();
         let comments = wasm_chess.get_comments();
 
         pretty_assertions::assert_eq!(
@@ -330,16 +329,72 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
             comments
         );
 
-        while wasm_chess.history.len() > 7 {
-            let move_verbose = wasm_chess.undo().unwrap();
+        while wasm_chess.history.len() > 5 {
+            wasm_chess.undo().unwrap();
         }
 
-        // let comment = wasm_chess.remove_comment();
+        let comment = wasm_chess.remove_comment();
 
-        // assert!(comment.is_some());
-        // pretty_assertions::assert_eq!(comment.unwrap(), "This opening is called the Ruy Lopez.");
+        assert!(comment.is_some());
+        pretty_assertions::assert_eq!(comment.unwrap(), "This opening is called the Ruy Lopez.");
 
-        // let comment = wasm_chess.remove_comment();
-        // assert!(comment.is_none());
+        let comment = wasm_chess.remove_comment();
+        assert!(comment.is_none());
+    }
+
+    #[test]
+    fn it_reads_dfrc_pgn() {
+        let pgn = r#"[Variant "From Position"]
+[FEN "bbnnrkrq/pppppppp/8/8/8/8/PPPPPPPP/RQBKRBNN w KQkq - 0 1"]
+
+1. e4 e5 2. Nf3 Nd6 3. Bc4 Nc6 4. O-O O-O-O"#;
+
+        let mut chess = WasmChess::new(None).unwrap();
+
+        chess.load_pgn(pgn).expect("Pgn ok");
+
+        pretty_assertions::assert_eq!(
+            chess.fen(None),
+            "bbkr2rq/pppp1ppp/2nn4/4p3/2B1P3/5N2/PPPP1PPP/RQB2RKN w - - 6 5".to_string()
+        );
+    }
+
+    #[test]
+    fn castles_from_dfrc_setup() {
+        let pgn = r#"[Variant "From Position"]
+[FEN "bbnnrkrq/pppppppp/8/8/8/8/PPPPPPPP/RQBKRBNN w KQkq - 0 1"]
+
+1. e4"#;
+
+        let fen_last = "bbkr2rq/pppp1ppp/2nn4/4p3/2B1P3/5N2/PPPP1PPP/RQB2RKN w - - 6 5".to_string();
+        let mut chess = WasmChess::new(None).unwrap();
+
+        chess.load_pgn(pgn).expect("Pgn ok");
+
+        chess.make_move("e5").unwrap();
+        chess.make_move("Nf3").unwrap();
+        chess.make_move("Nd6").unwrap();
+        chess.make_move("Bc4").unwrap();
+        chess.make_move("Nc6").unwrap();
+
+        // NOTE: not supported
+        // TODO: add support ?
+        // chess.make_move("o-o").unwrap();
+        // chess.make_move("o-o-o").unwrap();
+        // chess.make_move("0-0").unwrap();
+        // chess.make_move("0-0-0").unwrap();
+
+        chess.make_move("O-O").unwrap();
+        chess.make_move("O-O-O").unwrap();
+
+        pretty_assertions::assert_eq!(chess.fen(None), fen_last);
+        chess.undo();
+        chess.undo();
+
+        // uci format castle
+        chess.make_move("d1e1").unwrap();
+        chess.make_move("f8e8").unwrap();
+
+        pretty_assertions::assert_eq!(chess.fen(None), fen_last);
     }
 }

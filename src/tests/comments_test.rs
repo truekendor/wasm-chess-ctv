@@ -357,7 +357,7 @@ pub mod comments_test {
         }
 
         #[test]
-        fn clear_comments_load() {
+        fn comments_clear_after_load() {
             let mut chess = WasmChess::new(None).unwrap();
             chess.make_move("e4").unwrap();
             chess.set_comment("good move");
@@ -372,17 +372,13 @@ pub mod comments_test {
                 }]
             );
 
-            // reset
-            // clear
-            // load
-            // loadPgn
             chess.load(chess.fen(None)).unwrap();
 
             pretty_assertions::assert_eq!(chess.get_comments(), vec![]);
         }
 
         #[test]
-        fn clear_comments_load_pgn() {
+        fn comments_clear_after_pgn_load() {
             let mut chess = WasmChess::new(None).unwrap();
             chess.make_move("e4").unwrap();
             chess.set_comment("good move");
@@ -397,15 +393,13 @@ pub mod comments_test {
                 }]
             );
 
-            // reset
-            // clear
             chess.load_pgn("1. e4").unwrap();
 
             pretty_assertions::assert_eq!(chess.get_comments(), vec![]);
         }
 
         #[test]
-        fn clear_comments_reset() {
+        fn comments_clear_after_reset() {
             let mut chess = WasmChess::new(None).unwrap();
             chess.make_move("e4").unwrap();
             chess.set_comment("good move");
