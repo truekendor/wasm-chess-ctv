@@ -9,7 +9,10 @@ use shakmaty::{
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    helpers::{parsing, pgn_reader::PGNResult},
+    helpers::{
+        parsing::{self, verbose_move_object_from_internal_move},
+        pgn_reader::PGNResult,
+    },
     tsify_structs::{
         BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, SquareStr, SuffixSymbol,
         others::{
@@ -122,6 +125,7 @@ impl WasmChess {
         }
 
         let pos_before = self.chess.clone();
+        let verbose = verbose_move_object_from_internal_move(internal_move, &pos_before);
 
         self.chess.play_unchecked(internal_move);
         self.push_history_entry(internal_move, pos_before);
@@ -388,11 +392,10 @@ impl WasmChess {
 
         self.repetition_table.entry(self.hash).or_insert(1);
 
-        let move_verbose: Option<MoveVerbose> =
-            helpers::parsing::verbose_move_object_from_internal_move(last.raw_move, &self.chess)
-                .ok();
+        let move_verbose: MoveVerbose =
+            helpers::parsing::verbose_move_object_from_internal_move(last.raw_move, &self.chess);
 
-        move_verbose
+        Some(move_verbose)
     }
 
     #[wasm_bindgen(js_name = "legalMovesUCI")]
@@ -771,48 +774,12 @@ impl WasmChess {
             .map(|history_entry| {
                 let internal_move = history_entry.raw_move;
 
-                let promotion: Option<String> =
-                    internal_move.promotion().map(|val| val.char().to_string());
-
-                let captured_piece: Option<String> =
-                    internal_move.capture().map(|val| val.char().to_string());
-
-                let san_move = San::from_move(&history_entry.position_before, internal_move);
-
-                let fen_after = Fen::from_position(
-                    &history_entry.position_after,
-                    shakmaty::EnPassantMode::Legal,
-                );
-                let color_shorthand = match history_entry.turn {
-                    Color::White => ColorChar::W,
-                    Color::Black => ColorChar::B,
-                };
-
-                let from_sq = internal_move.from().expect(
-                    "Only standard chess and chess960 is supported, from() should always return Some",
+                let move_verbose = parsing::verbose_move_object_from_internal_move(
+                    internal_move,
+                    &history_entry.position_before,
                 );
 
-                let from = SquareStr::from_shakmaty_sq(&from_sq);
-                let to = SquareStr::from_shakmaty_sq(&internal_move.to());
-
-                MoveVerbose {
-                    from,
-                    to,
-                    promotion,
-                    lan: internal_move
-                        .to_uci(shakmaty::CastlingMode::Chess960)
-                        .to_string(),
-                    san: san_move.to_string(),
-                    piece: internal_move.role().char().to_string(),
-                    captured: captured_piece,
-
-                    color: color_shorthand,
-                    before: history_entry.fen_before.to_string(),
-                    after: fen_after.to_string(),
-
-                    is_en_passant: internal_move.is_en_passant(),
-                    is_castle: internal_move.is_castle(),
-                }
+                move_verbose
             })
             .collect();
 
