@@ -104,6 +104,8 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "move")]
+    // TODO:
+    // change return signature to return MoveVerbose
     // pub fn make_move(&mut self, move_str: &str) -> Result<MoveVerbose, String> {
     pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
         let internal_move =
