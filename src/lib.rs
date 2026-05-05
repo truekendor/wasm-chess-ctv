@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     helpers::{
-        parsing::{self, verbose_move_object_from_internal_move},
+        parsing::{self, verbose_move_object_from_raw_move},
         pgn_reader::PGNResult,
     },
     tsify_structs::{
@@ -113,7 +113,7 @@ impl WasmChess {
         }
 
         let pos_before = self.chess.clone();
-        let verbose = verbose_move_object_from_internal_move(internal_move, &pos_before);
+        let verbose = verbose_move_object_from_raw_move(internal_move, &pos_before);
 
         self.chess.play_unchecked(internal_move);
         self.push_history_entry(internal_move, pos_before);
@@ -393,7 +393,7 @@ impl WasmChess {
         self.repetition_table.entry(self.hash).or_insert(1);
 
         let move_verbose: MoveVerbose =
-            helpers::parsing::verbose_move_object_from_internal_move(last.raw_move, &self.chess);
+            helpers::parsing::verbose_move_object_from_raw_move(last.raw_move, &self.chess);
 
         Some(move_verbose)
     }
@@ -772,7 +772,7 @@ impl WasmChess {
             .map(|history_entry| {
                 let internal_move = history_entry.raw_move;
 
-                let move_verbose = parsing::verbose_move_object_from_internal_move(
+                let move_verbose = parsing::verbose_move_object_from_raw_move(
                     internal_move,
                     &history_entry.position_before,
                 );
