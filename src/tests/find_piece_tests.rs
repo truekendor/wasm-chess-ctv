@@ -2,7 +2,7 @@
 pub mod find_piece_tests {
     use crate::WasmChess;
 
-    use crate::tsify_structs::{others::*, *};
+    use crate::tsify_structs::{PieceSymbol, others::*, *};
 
     #[test]
     fn find_pawns_from_str() {

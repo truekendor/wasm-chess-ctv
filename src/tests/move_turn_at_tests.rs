@@ -4,7 +4,7 @@ pub mod tests {
     use std::str::FromStr;
 
     use crate::WasmChess;
-    use crate::tsify_structs::others::*;
+    use crate::tsify_structs::{PieceSymbol, others::*};
 
     #[test]
     fn test_turn_at_after_moves() {
@@ -102,7 +102,7 @@ pub mod tests {
         assert!(move_obj.is_some());
 
         let move_obj = move_obj.unwrap();
-        pretty_assertions::assert_eq!(move_obj.promotion, Some("q".to_string()));
+        pretty_assertions::assert_eq!(move_obj.promotion, Some(PieceSymbol::Q));
     }
 
     #[test]

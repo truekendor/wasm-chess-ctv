@@ -169,7 +169,7 @@ pub mod test {
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
         ))
         .unwrap();
-        chess.make_move("a2a3").unwrap_or(());
+        chess.make_move("a2a3").unwrap();
 
         chess.reset();
 

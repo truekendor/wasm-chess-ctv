@@ -1,9 +1,9 @@
 use ordermap::OrderMap;
 use serde::{Deserialize, Serialize};
-use shakmaty::{Color, Piece};
+use shakmaty::{Color, Piece, Role};
 use strum::Display;
 
-use crate::tsify_structs::square_str::SquareStr;
+use crate::tsify_structs::{PieceSymbol, square_str::SquareStr};
 
 #[derive(tsify::Tsify, Serialize, Deserialize)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -27,7 +27,7 @@ pub struct MoveObject {
     pub from: SquareStr,
     pub to: SquareStr,
     #[tsify(optional)]
-    pub promotion: Option<String>,
+    pub promotion: Option<PieceSymbol>,
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize)]
@@ -70,31 +70,6 @@ pub struct CastlingObj {
 pub enum ColorChar {
     W,
     B,
-}
-
-#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
-pub enum PieceSymbol {
-    P,
-    N,
-    B,
-    R,
-    Q,
-    K,
-}
-
-impl PieceSymbol {
-    pub fn from_shakmaty_piece(piece: &shakmaty::Piece) -> Self {
-        match piece.role {
-            shakmaty::Role::Pawn => PieceSymbol::P,
-            shakmaty::Role::Knight => PieceSymbol::N,
-            shakmaty::Role::Bishop => PieceSymbol::B,
-            shakmaty::Role::Rook => PieceSymbol::R,
-            shakmaty::Role::Queen => PieceSymbol::Q,
-            shakmaty::Role::King => PieceSymbol::K,
-        }
-    }
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize)]

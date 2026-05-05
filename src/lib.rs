@@ -14,10 +14,11 @@ use crate::{
         pgn_reader::PGNResult,
     },
     tsify_structs::{
-        BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, SquareStr, SuffixSymbol,
+        BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, PieceSymbol, SquareStr,
+        SuffixSymbol,
         others::{
             CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject,
-            OkOrError, PieceObj, PieceSymbol, PrunedCommentsObj, SquareColor, SquareInfoObj,
+            OkOrError, PieceObj, PrunedCommentsObj, SquareColor, SquareInfoObj,
         },
     },
 };
@@ -29,15 +30,15 @@ mod tsify_structs;
 #[derive(Clone, Debug)]
 struct History {
     raw_move: Move,
-
-    // move_number: u32,
-    // half_moves: u32,
     turn: Color,
 
     fen_before: Fen,
     fen_after: Fen,
 
     position_before: Chess,
+    // NOTE:
+    // not doing anything ?
+    // todo: remove?
     position_after: Chess,
 }
 
@@ -51,18 +52,12 @@ pub struct WasmChess {
     pgn_result: Option<PGNResult>,
 }
 
-// TODO:
-// replace relevant return types with these
 pub type FenString = String;
 pub type SuffixString = String;
 
-// todo: make nag u8/u16/u32 number ??
+// todo: make nag and suffix u8/u16/u32 number ??
 pub type NAGString = String;
 pub type MoveString = String;
-
-// TODO: add docs
-
-// TODO: find what String can be replaced with &str without lifetime and do it
 
 #[wasm_bindgen]
 impl WasmChess {
@@ -107,10 +102,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "move")]
-    // TODO:
-    // change return signature to return MoveVerbose
-    // pub fn make_move(&mut self, move_str: &str) -> Result<MoveVerbose, String> {
-    pub fn make_move(&mut self, move_str: &str) -> Result<(), String> {
+    pub fn make_move(&mut self, move_str: &str) -> Result<MoveVerbose, String> {
         let internal_move =
             helpers::parsing::str_to_move(move_str, &self.chess).map_err(|err| {
                 return err.to_string();
@@ -133,7 +125,7 @@ impl WasmChess {
         self.hash = self.chess.zobrist_hash(shakmaty::EnPassantMode::Legal);
         *self.repetition_table.entry(self.hash).or_insert(0) += 1;
 
-        return Ok(());
+        return Ok(verbose);
     }
 
     // TODO:
@@ -144,18 +136,19 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "moveFromObj")]
-    // pub fn make_move_from_obj(&mut self, move_obj: MoveObject) -> Result<MoveVerbose, String> {
-    pub fn make_move_from_obj(&mut self, move_obj: MoveObject) -> Result<(), String> {
-        let mut uci_str = format!("{}{}", move_obj.from, move_obj.to);
+    pub fn make_move_from_obj(&mut self, move_obj: MoveObject) -> Result<MoveVerbose, String> {
+        let mut move_str = String::with_capacity(5);
+        move_str.push_str(&move_obj.from.as_str());
+        move_str.push_str(&move_obj.to.as_str());
 
         match move_obj.promotion {
             Some(val) => {
-                uci_str.push_str(&val.to_lowercase());
+                move_str.push_str(val.as_str());
             }
             None => (),
         };
 
-        self.make_move(&uci_str)
+        self.make_move(&move_str)
     }
 
     /// resets to default starting position
@@ -281,7 +274,9 @@ impl WasmChess {
             idx if idx <= self.history.len() => {
                 let history_entry = &self.history[idx - 1];
                 let internal_move = history_entry.raw_move;
-                let promotion = internal_move.promotion().map(|m| m.char().to_string());
+                let promotion = internal_move
+                    .promotion()
+                    .map(|role| PieceSymbol::from_shakmaty_piece_role(&role));
 
                 let from = internal_move.from()?;
                 let to = internal_move.to();
@@ -591,14 +586,12 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "isPromotion")]
     pub fn is_promotion(&self, move_obj: MoveFromSquares) -> bool {
-        let move_str = {
-            let capacity = 5; // e7d8q
-            let mut string = String::with_capacity(capacity);
-            string.push_str(&move_obj.from.as_str());
-            string.push_str(&move_obj.to.as_str());
-            string.push('n');
-            string
-        };
+        let mut move_str = String::with_capacity(5);
+        move_str.push_str(&move_obj.from.as_str());
+        move_str.push_str(&move_obj.to.as_str());
+
+        // placeholder promotion to see if the move is valid
+        move_str.push('n');
 
         parsing::str_to_move(&move_str, &self.chess)
             .map(|internal_move| internal_move.is_promotion())
