@@ -343,6 +343,7 @@ pub mod comments_test {
             chess.set_comment("tactical");
 
             chess.undo();
+            chess.make_move("d4").unwrap();
             chess.set_comment("positional");
 
             pretty_assertions::assert_eq!(
@@ -354,6 +355,9 @@ pub mod comments_test {
                     suffix_annotation: None
                 }]
             );
+
+            println!("PGN: {}", chess.pgn());
+            // assert !(chess.pgn().ends_with("1. d4 {positional} *"));
         }
 
         #[test]

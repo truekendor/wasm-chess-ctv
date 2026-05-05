@@ -11,6 +11,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::{
     helpers::{
         parsing::{self, verbose_move_object_from_raw_move},
+        pgn::chess_to_pgn,
         pgn_reader::PGNResult,
     },
     tsify_structs::{
@@ -25,12 +26,15 @@ use crate::{
 
 /// TODOs global
 /// add helper for fen parsing
-/// move board(), get_comments(), load_pgn() out of WasmChess struct
+/// move board(), get_comments(), load_pgn() pgn() out of WasmChess struct
 ///
 /// add current_or_initial_fen() ?
 ///
 /// change legalMoves(UCI/SAN/Verbose) to
 /// legalMoves(Option<Mode::Verbose/San/Uci >)
+///
+/// missing chess.js methods
+/// moves(), pgn()
 ///
 /// NOTES: not supported: nullmoves, excessive material
 /// direct board manipulation: clear(), put(), remove(), (setTurn() ? may be possible rn),
@@ -115,6 +119,32 @@ impl WasmChess {
         })
     }
 
+    /// Makes a move using SAN or UCI notation.
+    ///
+    /// Accepted formats include:
+    /// - SAN (`Nf3`, `Qxe5+`, `O-O`)
+    /// - UCI (`e2e4`, `g1f3`)
+    ///
+    /// On success the move is applied, repetition state is updated,
+    /// and the move is appended to history.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - the move cannot be parsed
+    /// - the move is illegal in the current position
+    ///
+    /// # chess.js Compatibility
+    ///
+    /// Compatible with `chess.move()` string input behavior.
+    ///
+    /// # Examples
+    ///
+    /// ```js
+    /// chess.move("e4")
+    /// chess.move("Nf3")
+    /// chess.move("e2e4")
+    /// ```
     #[wasm_bindgen(js_name = "move")]
     pub fn make_move(&mut self, move_str: &str) -> Result<MoveVerbose, String> {
         let internal_move =
@@ -177,13 +207,27 @@ impl WasmChess {
         self.reset_all();
     }
 
-    /// Loads a new position from FEN.
+    /// Loads a position from a FEN string.
     ///
-    /// This clears:
+    /// This completely replaces the current game state and clears:
     /// - move history
     /// - repetition tracking
     /// - PGN comments
-    /// - headers
+    /// - PGN headers
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the provided FEN is invalid.
+    ///
+    /// # chess.js Compatibility
+    ///
+    /// Behaves similarly to `chess.load()` from chess.js.
+    ///
+    /// # Examples
+    ///
+    /// ```js
+    /// chess.load("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    /// ```
     pub fn load(
         &mut self,
         starting_fen: FenString,
@@ -441,6 +485,22 @@ impl WasmChess {
         }
     }
 
+    /// Undoes the last move.
+    ///
+    /// Restores:
+    /// - board state
+    /// - side to move
+    /// - castling rights
+    /// - en passant state
+    /// - repetition tracking
+    ///
+    /// Returns the undone move in verbose format.
+    ///
+    /// Returns `None` if the game history is empty.
+    ///
+    /// # chess.js Compatibility
+    ///
+    /// Behaves similarly to `chess.undo()`.
     pub fn undo(&mut self) -> Option<MoveVerbose> {
         let last = match self.history.pop() {
             Some(h) => h,
@@ -875,25 +935,9 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "setHeader")]
     pub fn set_header(&mut self, key: String, value: String) -> HeadersObj {
-        if self.pgn_result.is_none() {
-            self.pgn_result = Some(PGNResult::default());
-        };
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
 
-        match self.pgn_result.as_mut() {
-            Some(val) => {
-                val.headers.clear();
-                val.headers.insert(key, value);
-            }
-            None => {
-                self.pgn_result = Some(PGNResult::default());
-                // TODO: remove unwrap later
-                self.pgn_result
-                    .as_mut()
-                    .expect("we just created it")
-                    .headers
-                    .insert(key, value);
-            }
-        }
+        pgn_result.headers.insert(key, value);
 
         self.get_headers()
     }
@@ -1102,48 +1146,9 @@ impl WasmChess {
 
     #[wasm_bindgen(js_name = "pgn")]
     pub fn pgn(&self) -> String {
-        let mut pgn = String::new();
+        let pgn_string = chess_to_pgn(&self);
 
-        // Headers
-        if let Some(pgn_result) = &self.pgn_result {
-            for (key, value) in &pgn_result.headers {
-                pgn.push_str(&format!("[{key} \"{value}\"]\n"));
-            }
-
-            if !pgn_result.headers.is_empty() {
-                pgn.push('\n');
-            }
-        }
-
-        // Moves
-        for (index, entry) in self.history.iter().enumerate() {
-            // White move -> prepend move number
-            if index % 2 == 0 {
-                let move_number = (index / 2) + 1;
-                pgn.push_str(&format!("{move_number}. "));
-            }
-
-            let san = San::from_move(&entry.position_before, entry.raw_move);
-
-            pgn.push_str(&san.to_string());
-            pgn.push(' ');
-        }
-
-        // Result
-        let result = if self.is_checkmate() {
-            match self.turn() {
-                ColorChar::W => "0-1",
-                ColorChar::B => "1-0",
-            }
-        } else if self.is_draw() {
-            "1/2-1/2"
-        } else {
-            "*"
-        };
-
-        pgn.push_str(result);
-
-        pgn.trim().to_string()
+        pgn_string
     }
 
     // TODO: add custom types like type Suffix = String to avoid confusion
