@@ -1,3 +1,5 @@
+# TODO: change repo name to Chess.WASM or wasm-chess
+
 # wasm-chess
 
 `wasm-chess` provides a chess.js-inspired API while using the excellent Rust chess ecosystem underneath for correctness, performance, and reliability.
