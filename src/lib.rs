@@ -36,10 +36,6 @@ struct History {
     fen_after: Fen,
 
     position_before: Chess,
-    // NOTE:
-    // not doing anything ?
-    // todo: remove?
-    position_after: Chess,
 }
 
 #[wasm_bindgen]
@@ -131,8 +127,17 @@ impl WasmChess {
     // TODO:
     // implement later. returns a position as if the move was played
     // without mutating current state
-    fn next_position(&self) {
+    fn next_position(&self) -> MoveVerbose {
         //
+        todo!()
+    }
+
+    // TODO:
+    // API for playing arbitrary number of moves to avoid multiple make_move() calls from JS
+    // with one move Vec
+    fn play_moves(&self, moves: Vec<MoveString>) -> Vec<MoveVerbose> {
+        //
+        todo!()
     }
 
     #[wasm_bindgen(js_name = "moveFromObj")]
@@ -783,15 +788,12 @@ impl WasmChess {
         self.history.push(History {
             raw_move,
 
-            // move_number: self.fullmoves(),
-            // half_moves: self.halfmoves(),
             turn: self.chess.turn().other(),
 
             fen_before: Fen::from_position(&pos_before, EnPassantMode::Legal),
             fen_after: Fen::from_position(&self.chess, EnPassantMode::Legal),
 
             position_before: pos_before,
-            position_after: self.chess.clone(),
         });
     }
 
