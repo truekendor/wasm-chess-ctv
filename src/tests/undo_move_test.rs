@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod undo_logic_test {
     use crate::WasmChess;
-    use crate::tsify_structs::{MoveVerbose, SquareStr, others::*};
+    use crate::tsify_structs::{MoveVerbose, PieceSymbol, SquareStr, others::*};
 
     #[test]
     fn test_undo_after_two_moves() {
@@ -30,7 +30,7 @@ mod undo_logic_test {
                 after: "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2".to_string(),
 
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
 
                 captured: None,
                 is_regular_capture: false,
@@ -64,7 +64,7 @@ mod undo_logic_test {
                 before: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
                 after: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1".to_string(),
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,

@@ -45,7 +45,7 @@ pub struct MoveVerbose {
     pub after: String,
 
     pub color: ColorChar,
-    pub piece: String,
+    pub piece: PieceSymbol,
     pub captured: Option<PieceSymbol>,
     /// Matches chess.js `isCapture()` behavior.
     ///

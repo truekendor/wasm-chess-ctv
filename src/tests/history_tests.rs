@@ -31,7 +31,7 @@ pub mod history_test_chess_js {
         let answer: Vec<MoveVerbose> = vec![
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::C2,
                 to: SquareStr::C4,
 
@@ -53,7 +53,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E7,
                 to: SquareStr::E6,
 
@@ -74,7 +74,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
 
                 from: SquareStr::G1,
                 to: SquareStr::F3,
@@ -96,7 +96,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::D7,
 
                 to: SquareStr::D5,
@@ -120,7 +120,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::D2,
 
                 to: SquareStr::D4,
@@ -144,7 +144,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::G8,
 
                 to: SquareStr::F6,
@@ -168,7 +168,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::B1,
 
                 to: SquareStr::C3,
@@ -192,7 +192,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::F8,
 
                 to: SquareStr::E7,
@@ -216,7 +216,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::C1,
 
                 to: SquareStr::G5,
@@ -240,7 +240,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 from: SquareStr::E8,
 
                 to: SquareStr::H8,
@@ -265,7 +265,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E2,
 
                 to: SquareStr::E3,
@@ -289,7 +289,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::H7,
 
                 to: SquareStr::H6,
@@ -313,7 +313,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::G5,
 
                 to: SquareStr::H4,
@@ -337,7 +337,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::B7,
 
                 to: SquareStr::B6,
@@ -361,7 +361,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::C4,
 
                 to: SquareStr::D5,
@@ -385,7 +385,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::F6,
                 to: SquareStr::D5,
 
@@ -408,7 +408,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::H4,
                 to: SquareStr::E7,
 
@@ -431,7 +431,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::D8,
                 to: SquareStr::E7,
 
@@ -454,7 +454,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::C3,
 
                 to: SquareStr::D5,
@@ -478,7 +478,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E6,
                 to: SquareStr::D5,
 
@@ -500,7 +500,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::A1,
 
                 to: SquareStr::C1,
@@ -522,7 +522,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::C8,
 
                 to: SquareStr::E6,
@@ -544,7 +544,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::D1,
 
                 to: SquareStr::A4,
@@ -566,7 +566,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::C7,
 
                 to: SquareStr::C5,
@@ -589,7 +589,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::A4,
 
                 to: SquareStr::A3,
@@ -611,7 +611,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::F8,
 
                 to: SquareStr::C8,
@@ -633,7 +633,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::F1,
 
                 to: SquareStr::B5,
@@ -655,7 +655,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::A7,
 
                 to: SquareStr::A6,
@@ -677,7 +677,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::D4,
                 to: SquareStr::C5,
 
@@ -698,7 +698,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
 
                 from: SquareStr::B6,
                 to: SquareStr::C5,
@@ -721,7 +721,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 from: SquareStr::E1,
 
                 to: SquareStr::H1,
@@ -747,7 +747,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::A8,
 
                 to: SquareStr::A7,
@@ -769,7 +769,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::B5,
 
                 to: SquareStr::E2,
@@ -791,7 +791,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::B8,
 
                 to: SquareStr::D7,
@@ -813,7 +813,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::F3,
 
                 to: SquareStr::D4,
@@ -835,7 +835,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::E7,
 
                 to: SquareStr::F8,
@@ -857,7 +857,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::D4,
                 to: SquareStr::E6,
 
@@ -878,7 +878,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::F7,
                 to: SquareStr::E6,
 
@@ -899,7 +899,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E3,
                 to: SquareStr::E4,
 
@@ -920,7 +920,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::D5,
                 to: SquareStr::D4,
 
@@ -941,7 +941,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::F2,
                 to: SquareStr::F4,
 
@@ -962,7 +962,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::F8,
                 to: SquareStr::E7,
 
@@ -983,7 +983,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E4,
                 to: SquareStr::E5,
 
@@ -1004,7 +1004,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::C8,
                 to: SquareStr::B8,
 
@@ -1025,7 +1025,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::E2,
                 to: SquareStr::C4,
 
@@ -1046,7 +1046,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 from: SquareStr::G8,
                 to: SquareStr::H8,
 
@@ -1067,7 +1067,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::A3,
                 to: SquareStr::H3,
 
@@ -1088,7 +1088,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::D7,
                 to: SquareStr::F8,
 
@@ -1109,7 +1109,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::B2,
 
                 to: SquareStr::B3,
@@ -1131,7 +1131,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::A6,
                 to: SquareStr::A5,
 
@@ -1152,7 +1152,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::F4,
                 to: SquareStr::F5,
 
@@ -1173,7 +1173,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E6,
                 to: SquareStr::F5,
 
@@ -1194,7 +1194,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::F1,
                 to: SquareStr::F5,
 
@@ -1215,7 +1215,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::F8,
                 to: SquareStr::H7,
 
@@ -1236,7 +1236,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::C1,
                 to: SquareStr::F1,
 
@@ -1257,7 +1257,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::E7,
                 to: SquareStr::D8,
 
@@ -1277,7 +1277,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::H3,
                 to: SquareStr::G3,
 
@@ -1298,7 +1298,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::A7,
                 to: SquareStr::E7,
 
@@ -1319,7 +1319,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::H2,
                 to: SquareStr::H4,
 
@@ -1340,7 +1340,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::B8,
                 to: SquareStr::B7,
 
@@ -1361,7 +1361,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::E5,
                 to: SquareStr::E6,
 
@@ -1382,7 +1382,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::B7,
                 to: SquareStr::C7,
 
@@ -1403,7 +1403,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::G3,
 
                 to: SquareStr::E5,
@@ -1425,7 +1425,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::D8,
                 to: SquareStr::E8,
 
@@ -1446,7 +1446,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::A2,
                 to: SquareStr::A4,
 
@@ -1467,7 +1467,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::E8,
                 to: SquareStr::D8,
 
@@ -1488,7 +1488,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::F1,
                 to: SquareStr::F2,
 
@@ -1509,7 +1509,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::D8,
                 to: SquareStr::E8,
 
@@ -1530,7 +1530,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::F2,
 
                 to: SquareStr::F3,
@@ -1552,7 +1552,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::E8,
 
                 to: SquareStr::D8,
@@ -1574,7 +1574,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::C4,
 
                 to: SquareStr::D3,
@@ -1596,7 +1596,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::D8,
                 to: SquareStr::E8,
 
@@ -1617,7 +1617,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::E5,
                 to: SquareStr::E4,
 
@@ -1638,7 +1638,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 from: SquareStr::H7,
                 to: SquareStr::F6,
 
@@ -1659,7 +1659,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::F5,
                 to: SquareStr::F6,
 
@@ -1680,7 +1680,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::G7,
                 to: SquareStr::F6,
 
@@ -1701,7 +1701,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "r".to_string(),
+                piece: PieceSymbol::R,
                 from: SquareStr::F3,
                 to: SquareStr::F6,
 
@@ -1722,7 +1722,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 from: SquareStr::H8,
                 to: SquareStr::G8,
 
@@ -1743,7 +1743,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::D3,
 
                 to: SquareStr::C4,
@@ -1765,7 +1765,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 from: SquareStr::G8,
 
                 to: SquareStr::H8,
@@ -1787,7 +1787,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "q".to_string(),
+                piece: PieceSymbol::Q,
                 from: SquareStr::E4,
 
                 to: SquareStr::F4,
@@ -1840,7 +1840,7 @@ pub mod history_test_chess_js {
         let moves = vec![
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 from: SquareStr::B4,
                 to: SquareStr::A5,
                 lan: "b4a5".to_string(),
@@ -1862,7 +1862,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 from: SquareStr::E1,
                 to: SquareStr::H1,
                 lan: "e1h1".to_string(),
@@ -1884,7 +1884,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::D7,
                 to: SquareStr::D6,
                 lan: "d7d6".to_string(),
@@ -1905,7 +1905,7 @@ pub mod history_test_chess_js {
             },
             MoveVerbose {
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 from: SquareStr::D2,
                 to: SquareStr::D4,
                 lan: "d2d4".to_string(),
@@ -1948,7 +1948,7 @@ pub mod history_test_chess_js {
                 before: "bbnnrkrq/pppppppp/8/8/8/8/PPPPPPPP/RQBKRBNN w KQkq - 0 1".to_string(),
                 after: "bbnnrkrq/pppppppp/8/8/4P3/8/PPPP1PPP/RQBKRBNN b KQkq - 0 1".to_string(),
                 color: ColorChar::W,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -1966,7 +1966,7 @@ pub mod history_test_chess_js {
                 before: "bbnnrkrq/pppppppp/8/8/4P3/8/PPPP1PPP/RQBKRBNN b KQkq - 0 1".to_string(),
                 after: "bbnnrkrq/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RQBKRBNN w KQkq - 0 2".to_string(),
                 color: ColorChar::B,
-                piece: "p".to_string(),
+                piece: PieceSymbol::P,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -1986,7 +1986,7 @@ pub mod history_test_chess_js {
                 before: "bbnnrkrq/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RQBKRBNN w KQkq - 0 2".to_string(),
                 after: "bbnnrkrq/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RQBKRB1N b KQkq - 1 2".to_string(),
                 color: ColorChar::W,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -2008,7 +2008,7 @@ pub mod history_test_chess_js {
                 after: "bb1nrkrq/pppp1ppp/3n4/4p3/4P3/5N2/PPPP1PPP/RQBKRB1N w KQkq - 2 3"
                     .to_string(),
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -2030,7 +2030,7 @@ pub mod history_test_chess_js {
                 after: "bb1nrkrq/pppp1ppp/3n4/4p3/2B1P3/5N2/PPPP1PPP/RQBKR2N b KQkq - 3 3"
                     .to_string(),
                 color: ColorChar::W,
-                piece: "b".to_string(),
+                piece: PieceSymbol::B,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -2052,7 +2052,7 @@ pub mod history_test_chess_js {
                 after: "bb2rkrq/pppp1ppp/2nn4/4p3/2B1P3/5N2/PPPP1PPP/RQBKR2N w KQkq - 4 4"
                     .to_string(),
                 color: ColorChar::B,
-                piece: "n".to_string(),
+                piece: PieceSymbol::N,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -2074,7 +2074,7 @@ pub mod history_test_chess_js {
                 after: "bb2rkrq/pppp1ppp/2nn4/4p3/2B1P3/5N2/PPPP1PPP/RQB2RKN b kq - 5 4"
                     .to_string(),
                 color: ColorChar::W,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,
@@ -2095,7 +2095,7 @@ pub mod history_test_chess_js {
                     .to_string(),
                 after: "bbkr2rq/pppp1ppp/2nn4/4p3/2B1P3/5N2/PPPP1PPP/RQB2RKN w - - 6 5".to_string(),
                 color: ColorChar::B,
-                piece: "k".to_string(),
+                piece: PieceSymbol::K,
                 captured: None,
                 is_regular_capture: false,
                 promotion: None,

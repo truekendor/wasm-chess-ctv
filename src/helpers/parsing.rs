@@ -260,6 +260,7 @@ pub fn verbose_move_object_from_raw_move(raw_move: Move, chess_pos: &Chess) -> M
         Color::Black => ColorChar::B,
     };
 
+    let piece = PieceSymbol::from_shakmaty_piece_role(&raw_move.role());
     let san_move = San::from_move(&chess_pos, raw_move);
 
     let CastleData {
@@ -284,7 +285,7 @@ pub fn verbose_move_object_from_raw_move(raw_move: Move, chess_pos: &Chess) -> M
             .to_uci(shakmaty::CastlingMode::Chess960)
             .to_string(),
         san: san_move.to_string(),
-        piece: raw_move.role().char().to_string(),
+        piece,
         captured: captured_piece,
         is_regular_capture: raw_move.is_capture() && !raw_move.is_en_passant(),
 
