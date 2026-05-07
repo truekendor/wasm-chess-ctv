@@ -524,12 +524,12 @@ impl WasmChess {
         Some(move_verbose)
     }
 
-    #[wasm_bindgen(js_name = "legalMovesUCI")]
+    #[wasm_bindgen(js_name = "legalMovesUci")]
     pub fn legal_moves_uci(&self) -> Vec<MoveString> {
         helpers::legal_moves::uci(&self.chess)
     }
 
-    #[wasm_bindgen(js_name = "legalMovesSAN")]
+    #[wasm_bindgen(js_name = "legalMovesSan")]
     pub fn legal_moves_san(&self) -> Vec<MoveString> {
         helpers::legal_moves::san(&self.chess)
     }
