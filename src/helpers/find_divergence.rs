@@ -35,7 +35,7 @@ pub struct DivergeData {
 
 #[wasm_bindgen(js_name = "findDivergence")]
 pub fn find_divergence(
-    last_common_fen: FenString,
+    common_fen: FenString,
     move_list_current: Vec<String>,
     move_list_reverse: Vec<String>,
 ) -> Vec<TranspositionDataEntry> {
@@ -45,8 +45,8 @@ pub fn find_divergence(
         return same_positions_list;
     }
 
-    let result_current = get_hash_and_san(move_list_current, Some(last_common_fen.clone()));
-    let result_reverse = get_hash_and_san(move_list_reverse, Some(last_common_fen.clone()));
+    let result_current = get_hash_and_san(move_list_current, Some(common_fen.clone()));
+    let result_reverse = get_hash_and_san(move_list_reverse, Some(common_fen.clone()));
 
     let reverse_zobrist_set: HashSet<&Zobrist64> =
         HashSet::from_iter(result_reverse.zobrist_hash.iter());
