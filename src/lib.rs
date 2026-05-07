@@ -884,6 +884,11 @@ impl WasmChess {
         return Ok(());
     }
 
+    #[wasm_bindgen(js_name = "pgn")]
+    pub fn pgn(&self) -> String {
+        chess_to_pgn(&self)
+    }
+
     #[wasm_bindgen(js_name = "getHeaders")]
     pub fn get_headers(&self) -> HeadersObj {
         match self.pgn_result.as_ref() {
@@ -1105,11 +1110,6 @@ impl WasmChess {
         };
 
         pgn_result.suffix_map.get(&fen_key).cloned()
-    }
-
-    #[wasm_bindgen(js_name = "pgn")]
-    pub fn pgn(&self) -> String {
-        chess_to_pgn(&self)
     }
 
     // TODO: add custom types like type Suffix = String to avoid confusion
