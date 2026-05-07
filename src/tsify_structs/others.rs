@@ -4,7 +4,7 @@ use strum::Display;
 
 use crate::tsify_structs::{PieceSymbol, square_str::SquareStr};
 
-#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[derive(tsify::Tsify, Serialize, Deserialize, PartialEq, Debug)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct HeadersObj {
