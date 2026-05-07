@@ -16,11 +16,11 @@ use crate::{
         pgn_reader::PGNResult,
     },
     tsify_structs::{
-        BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, PieceSymbol, SquareStr,
-        SuffixSymbol,
+        BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, PieceObj, PieceSymbol,
+        SquareStr, SuffixSymbol,
         others::{
             CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject,
-            OkOrError, PieceObj, PrunedCommentsObj, SquareColor, SquareInfoObj,
+            OkOrError, PreserveHeaders, PrunedCommentsObj, SquareColor, SquareInfoObj,
         },
     },
 };
@@ -172,17 +172,40 @@ impl WasmChess {
     }
 
     // TODO:
-    // pla
-    fn next_position(&self) -> MoveVerbose {
-        //
-        todo!()
+    // add docs about what it does
+    // make public
+    // add js_name
+    // add tests
+    fn simulate_move(&self, move_str: &str) -> Result<MoveVerbose, String> {
+        let internal_move =
+            helpers::parsing::str_to_move(move_str, &self.chess).map_err(|err| {
+                return err.to_string();
+            })?;
+
+        if !self.chess.is_legal(internal_move) {
+            return Err(format!(
+                "Illegal move: {}\nFEN: {}",
+                move_str,
+                self.fen(None)
+            ));
+        }
+
+        let verbose_move = verbose_move_object_from_raw_move(internal_move, &self.chess);
+
+        return Ok(verbose_move);
     }
 
     // TODO:
     // Planned for batch move simulation API.
-    fn play_moves(&self, moves: Vec<MoveString>) -> Vec<MoveVerbose> {
-        //
-        todo!()
+    // add tests
+    // add js_name
+    fn play_moves_batch(&mut self, moves: Vec<MoveString>) -> Result<Vec<MoveVerbose>, String> {
+        moves
+            .iter()
+            .map(|move_str| {
+                return self.make_move(move_str);
+            })
+            .collect::<Result<Vec<MoveVerbose>, String>>()
     }
 
     #[wasm_bindgen(js_name = "moveFromObj")]
@@ -270,7 +293,7 @@ impl WasmChess {
         self.repetition_table.insert(zobrist_hash, 1);
     }
 
-    pub fn fen(&self, force_en_passant_square: Option<bool>) -> String {
+    pub fn fen(&self, force_en_passant_square: Option<bool>) -> FenString {
         let en_passant_mode = match force_en_passant_square {
             Some(true) => shakmaty::EnPassantMode::Always,
             Some(false) => shakmaty::EnPassantMode::Legal,
@@ -279,6 +302,12 @@ impl WasmChess {
         let fen = Fen::from_position(&self.chess, en_passant_mode);
 
         fen.to_string()
+    }
+
+    // TODO: add inline docs
+    // add use cases ? maybe
+    pub fn board_fen(&self) -> String {
+        self.chess.board().board_fen().to_string()
     }
 
     // more docs because this method not present in chess.js
@@ -715,13 +744,19 @@ impl WasmChess {
         self.chess.is_stalemate()
     }
 
+    /// Checks if a move from the given squares would result in a promotion.
+    ///
+    /// # Returns
+    /// `true` if the move would promote a pawn, `false` otherwise
     #[wasm_bindgen(js_name = "isPromotion")]
     pub fn is_promotion(&self, move_obj: MoveFromSquares) -> bool {
         let mut move_str = String::with_capacity(5);
         move_str.push_str(&move_obj.from.as_str());
         move_str.push_str(&move_obj.to.as_str());
 
-        // placeholder promotion to see if the move is valid
+        // # Note
+        // Uses knight as a temporary promotion piece to validate the move.
+        // This works because any promotion piece would indicate a valid promotion.
         move_str.push('n');
 
         parsing::str_to_move(&move_str, &self.chess)
@@ -778,19 +813,45 @@ impl WasmChess {
         ascii::from_board(&self.chess.board())
     }
 
-    // TODO:  return PieceObj !
-    pub fn get(&self, square: SquareStr) -> Option<String> {
+    pub fn get(&self, square: SquareStr) -> Option<PieceObj> {
         let square = square.to_shakmaty_sq();
 
-        let piece = self.chess.board().piece_at(square);
-        let char = match piece {
-            Some(p) => p.char(),
-            None => {
-                return None;
-            }
+        let Some(piece) = self.chess.board().piece_at(square) else {
+            return None;
         };
 
-        Some(char.to_string())
+        let piece_obj = PieceObj::from_shakmaty_piece(&piece);
+
+        Some(piece_obj)
+    }
+
+    pub fn put(&mut self, piece_obj: PieceObj) -> bool {
+        todo!()
+        // self.chess.board_mut().set_piece(
+        //     SquareStr::to_shakmaty_sq(&piece_obj.square),
+        //     piece_obj.to_shakmaty_piece(),
+        // );
+    }
+
+    pub fn remove(&mut self, square: SquareStr) -> Option<PieceObj> {
+        todo!()
+    }
+
+    pub fn clear(&mut self, preserve_headers: Option<PreserveHeaders>) {
+        let preserve_headers: bool = match preserve_headers {
+            Some(val) => val.preserve_headers,
+            None => false,
+        };
+
+        todo!()
+    }
+
+    pub fn set_turn(&mut self, color: ColorChar) -> bool {
+        todo!()
+    }
+
+    pub fn set_castling_rights(&mut self, color: ColorChar, castling_obj: CastlingObj) -> bool {
+        todo!()
     }
 
     #[wasm_bindgen(js_name = "historySAN")]

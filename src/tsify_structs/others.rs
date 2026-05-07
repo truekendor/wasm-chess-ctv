@@ -88,3 +88,10 @@ pub struct SquareInfoObj {
     pub r#type: PieceSymbol,
     pub color: ColorChar,
 }
+
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct PreserveHeaders {
+    pub preserve_headers: bool,
+}
