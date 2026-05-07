@@ -3,7 +3,7 @@ use shakmaty::{Color, Piece};
 
 use crate::tsify_structs::{PieceSymbol, others::ColorChar};
 
-#[derive(tsify::Tsify, Serialize, Deserialize)]
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct PieceObj {
     pub r#type: PieceSymbol,
