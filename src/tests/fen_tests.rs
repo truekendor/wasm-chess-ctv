@@ -3,7 +3,7 @@ pub mod fen_tests {
     use crate::{
         WasmChess,
         tsify_structs::{
-            SquareStr,
+            PieceObj, PieceSymbol, SquareStr,
             others::{ColorChar, MoveObject},
         },
     };
@@ -80,10 +80,35 @@ pub mod fen_tests {
     fn test_get_piece_at_square() {
         let chess = WasmChess::new(None).unwrap();
 
-        pretty_assertions::assert_eq!(chess.get(SquareStr::E2).unwrap(), "P");
-        pretty_assertions::assert_eq!(chess.get(SquareStr::E7).unwrap(), "p");
-        pretty_assertions::assert_eq!(chess.get(SquareStr::A1).unwrap(), "R");
-        pretty_assertions::assert_eq!(chess.get(SquareStr::H8).unwrap(), "r");
+        pretty_assertions::assert_eq!(
+            chess.get(SquareStr::E2).unwrap(),
+            PieceObj {
+                color: ColorChar::W,
+                r#type: PieceSymbol::P
+            }
+        );
+        pretty_assertions::assert_eq!(
+            chess.get(SquareStr::E7).unwrap(),
+            PieceObj {
+                color: ColorChar::B,
+                r#type: PieceSymbol::P
+            }
+        );
+        pretty_assertions::assert_eq!(
+            chess.get(SquareStr::A1).unwrap(),
+            PieceObj {
+                color: ColorChar::W,
+                r#type: PieceSymbol::R
+            }
+        );
+        pretty_assertions::assert_eq!(
+            chess.get(SquareStr::H8).unwrap(),
+            PieceObj {
+                color: ColorChar::B,
+                r#type: PieceSymbol::R
+            }
+        );
+
         assert!(chess.get(SquareStr::E4).is_none());
     }
 
