@@ -242,6 +242,36 @@ fn to_internal_moves(moves: Vec<String>, starting_fen: Option<String>) -> Vec<Mo
     internal_moves_list
 }
 
+/// Converts a raw chess move into a verbose move object containing comprehensive move metadata.
+///
+/// # Important Safety Note
+/// **Move validation is the caller's responsibility.** This function plays the move unchecked
+/// using `play_unchecked()`, assuming the move is already validated as legal by the caller.
+/// Passing an illegal move may result in an invalid board state or panics.
+///
+/// # Parameters
+/// - `raw_move`: The raw move to convert and apply to the position
+/// - `chess_pos`: The current chess position before the move is played
+///
+/// # Returns
+/// A `MoveVerbose` struct containing:
+/// - Algebraic notation (SAN and LAN/UCI formats)
+/// - Piece and capture information
+/// - Castle detection flags
+/// - En passant detection
+/// - FEN strings of the board state before and after the move
+/// - Square coordinates (from/to)
+/// - Promotion piece (if any)
+///
+/// # Note
+/// Only standard chess and Chess960 positions are supported. The function will panic if
+/// `raw_move.from()` returns `None`, which shouldn't happen for standard chess variants.
+///
+/// # Example
+/// ```ignore
+/// let verbose_move = verbose_move_object_from_raw_move(raw_move, &position);
+/// println!("SAN: {}, Fen after: {:?}", verbose_move.san, verbose_move.after);
+/// ```
 pub fn verbose_move_object_from_raw_move(raw_move: Move, chess_pos: &Chess) -> MoveVerbose {
     let mut chess_pos = chess_pos.clone();
 
