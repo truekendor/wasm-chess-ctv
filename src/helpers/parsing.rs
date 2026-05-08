@@ -235,7 +235,7 @@ pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError
 /// # Note
 /// Only standard chess and Chess960 positions are supported. The function will panic if
 /// `raw_move.from()` returns `None`, which shouldn't happen for standard chess variants.
-pub fn verbose_move_object_from_raw_move(raw_move: Move, chess_pos: &Chess) -> MoveVerbose {
+pub fn verbose_move_from_raw_move(raw_move: Move, chess_pos: &Chess) -> MoveVerbose {
     let mut chess_pos = chess_pos.clone();
 
     let fen_before = Fen::from_position(&chess_pos, shakmaty::EnPassantMode::Legal);

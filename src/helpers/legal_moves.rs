@@ -1,7 +1,7 @@
 use shakmaty::{Chess, Position, san::San, uci::UciMove};
 
 use crate::{
-    helpers::parsing::{san_to_san_plus, verbose_move_object_from_raw_move},
+    helpers::parsing::{san_to_san_plus, verbose_move_from_raw_move},
     tsify_structs::MoveVerbose,
 };
 
@@ -42,7 +42,7 @@ pub fn verbose(chess: &Chess) -> Vec<MoveVerbose> {
         .legal_moves()
         .iter()
         .map(|raw_move| {
-            let move_verbose = verbose_move_object_from_raw_move(*raw_move, chess);
+            let move_verbose = verbose_move_from_raw_move(*raw_move, chess);
 
             move_verbose
         })
