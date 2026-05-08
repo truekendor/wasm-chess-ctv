@@ -28,6 +28,16 @@ impl Visitor for PGNResult {
         self.suffix_map = OrderMap::new();
         self.nag_map = OrderMap::new();
 
+        self.headers = OrderMap::from([
+            ("Event".to_string(), "?".to_string()),
+            ("Site".to_string(), "?".to_string()),
+            ("Date".to_string(), "????.??.??".to_string()),
+            ("Round".to_string(), "?".to_string()),
+            ("White".to_string(), "?".to_string()),
+            ("Black".to_string(), "?".to_string()),
+            ("Result".to_string(), "*".to_string()),
+        ]);
+
         ControlFlow::Continue(())
     }
 
