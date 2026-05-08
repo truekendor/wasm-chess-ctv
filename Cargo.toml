@@ -23,10 +23,6 @@ strum = { version = "0.28", features = ["derive"] }
 wasm-bindgen-test = { version = "*" }
 pretty_assertions = { version = "1.4" }
 
-# Enable simd feature for this crate
-[features]
-default = []
-simd = []
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = true
