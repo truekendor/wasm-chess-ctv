@@ -40,7 +40,7 @@ impl Visitor for PGNResult {
         let tag_key: String = name.iter().map(|b| *b as char).collect();
         let tag_val = str::from_utf8(value.as_bytes());
 
-        if name == b"FEN" {
+        if name.to_ascii_uppercase() == b"FEN" {
             let fen = match Fen::from_ascii(value.as_bytes()) {
                 Ok(fen) => fen,
                 Err(err) => {
