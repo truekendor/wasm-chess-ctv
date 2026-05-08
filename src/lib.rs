@@ -965,13 +965,13 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "pgn")]
-    pub fn pgn(&self, options: Option<PGNOptions>) -> String {
+    pub fn pgn(&mut self, options: Option<PGNOptions>) -> String {
         let options = options.unwrap_or_else(|| PGNOptions {
             max_width: Some(0),
             newline: Some("\n".to_string()),
         });
 
-        chess_to_pgn(&self, options)
+        chess_to_pgn(self, options)
     }
 
     #[wasm_bindgen(js_name = "getHeaders")]
@@ -1149,7 +1149,6 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "addNag")]
-    // TODO: brokeN ??
     pub fn add_nag(&mut self, nag: &str, fen: Option<FenString>) {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
