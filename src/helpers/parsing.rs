@@ -206,42 +206,6 @@ pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError
     Err(MoveParseError::InvalidFormat(move_str.to_string()))
 }
 
-// TODO: return something like MovesAndError
-fn to_internal_moves(moves: Vec<String>, starting_fen: Option<String>) -> Vec<Move> {
-    let starting_fen = starting_fen.unwrap_or_else(|| {
-        Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
-    });
-
-    let mut internal_moves_list: Vec<Move> = vec![];
-
-    let fen: Fen = match starting_fen.parse() {
-        Ok(val) => val,
-        Err(_err) => return internal_moves_list,
-    };
-
-    let mut chess_pos: Chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
-        Ok(val) => val,
-        Err(_err) => return internal_moves_list,
-    };
-
-    for move_str in moves {
-        let internal_move: Move = match str_to_move(&move_str, &chess_pos) {
-            Ok(val) => val,
-            Err(_err) => return internal_moves_list,
-        };
-
-        if !chess_pos.is_legal(internal_move) {
-            return internal_moves_list;
-        }
-
-        chess_pos.play_unchecked(internal_move);
-
-        internal_moves_list.push(internal_move);
-    }
-
-    internal_moves_list
-}
-
 /// Converts a raw chess move into a verbose move object containing comprehensive move metadata.
 ///
 /// # Important Safety Note
