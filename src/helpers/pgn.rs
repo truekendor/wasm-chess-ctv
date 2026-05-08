@@ -2,39 +2,38 @@ use shakmaty::{Position, san::San};
 
 use crate::{
     WasmChess,
+    helpers::pgn_reader::PGNResult,
     tsify_structs::others::{ColorChar, PGNOptions},
 };
 
-pub fn chess_to_pgn(wasm_chess: &WasmChess, options: PGNOptions) -> String {
+pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
     let newline = options.newline.unwrap_or("\n".to_string());
-    let newline = &newline.as_str();
+    let newline = newline.as_str();
     let max_width = options.max_width.unwrap_or(0);
 
     let mut tokens: Vec<String> = Vec::new();
     let mut header_string = String::new();
 
-    // Headers
-    if let Some(pgn_result) = &wasm_chess.pgn_result {
-        for (key, value) in &pgn_result.headers {
-            header_string.push_str(&format!("[{key} \"{value}\"]{newline}"));
-        }
+    // TODO: rewtite to `let pgn_result = &wasm_chess.pgn_result`
 
-        if !pgn_result.headers.is_empty() {
-            header_string.push_str(newline);
-        }
+    let initial_fen = if wasm_chess.history.is_empty() {
+        wasm_chess.fen(None)
+    } else {
+        wasm_chess.history[0].fen_before.clone().to_string()
+    };
+
+    let pgn_result = wasm_chess.pgn_result.get_or_insert_with(PGNResult::default);
+
+    for (key, value) in &pgn_result.headers {
+        header_string.push_str(&format!("[{key} \"{value}\"]{newline}"));
     }
 
-    // Initial position comment
-    if let Some(pgn_result) = &wasm_chess.pgn_result {
-        let initial_fen = if wasm_chess.history.is_empty() {
-            wasm_chess.fen(None)
-        } else {
-            wasm_chess.history[0].fen_before.clone().to_string()
-        };
+    if !pgn_result.headers.is_empty() {
+        header_string.push_str(newline);
+    }
 
-        if let Some(comment) = pgn_result.comments_map.get(&initial_fen) {
-            tokens.push(format!("{{{comment}}}"));
-        }
+    if let Some(comment) = pgn_result.comments_map.get(&initial_fen) {
+        tokens.push(format!("{{{comment}}}"));
     }
 
     // Moves
@@ -61,29 +60,26 @@ pub fn chess_to_pgn(wasm_chess: &WasmChess, options: PGNOptions) -> String {
             move_text.push_str("+");
         }
 
-        if let Some(pgn_result) = &wasm_chess.pgn_result {
-            // NAGs
-            if let Some(nags) = pgn_result.nag_map.get(&fen_after) {
-                for nag in nags {
-                    move_text.push(' ');
-                    move_text.push_str(nag);
-                }
-            }
-
-            // Suffix annotation
-            if let Some(suffix) = pgn_result.suffix_map.get(&fen_after) {
+        // NAGs
+        if let Some(nags) = pgn_result.nag_map.get(&fen_after) {
+            for nag in nags {
                 move_text.push(' ');
-                move_text.push_str(suffix);
+                move_text.push_str(nag);
             }
+        }
+
+        // Suffix annotation
+        if let Some(suffix) = pgn_result.suffix_map.get(&fen_after) {
+            move_text.push(' ');
+            move_text.push_str(suffix);
         }
 
         tokens.push(move_text);
 
-        // Comment
-        if let Some(pgn_result) = &wasm_chess.pgn_result {
-            if let Some(comment) = pgn_result.comments_map.get(&fen_after) {
-                tokens.push(format!("{{{comment}}}"));
-            }
+        if let Some(comment) = pgn_result.comments_map.get(&fen_after) {
+            let comment = comment.replace("\n", " ");
+            // let comment = comment.trim();
+            tokens.push(format!("{{{comment}}}"));
         }
     }
 
