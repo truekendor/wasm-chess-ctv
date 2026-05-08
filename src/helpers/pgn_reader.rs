@@ -106,12 +106,12 @@ impl Visitor for PGNResult {
         let nag_str = nag.as_str();
         match nag_str {
             "$1" | "$2" | "$3" | "$4" | "$5" | "$6" => {
-                let last_char = nag_str.chars().last().unwrap();
+                let number_part = &nag_str[1..];
 
-                let number = last_char.to_digit(10);
+                let number = number_part.parse::<u32>();
 
-                if let Some(suffix_number) = number {
-                    let suffix_number = suffix_number - 1;
+                if let Ok(nag_number) = number {
+                    let suffix_number = nag_number - 1;
 
                     if suffix_number >= SUFFIX_LIST.len() as u32 {
                         return ControlFlow::Continue(());
