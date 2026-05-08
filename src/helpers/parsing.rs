@@ -301,6 +301,8 @@ pub fn verbose_move_object_from_raw_move(raw_move: Move, chess_pos: &Chess) -> M
     chess_pos.play_unchecked(raw_move);
     let fen_after = Fen::from_position(&chess_pos, shakmaty::EnPassantMode::Legal);
 
+    let san_string = san_to_san_plus(&san_move, &chess_pos);
+
     let from = SquareStr::from_shakmaty_sq(&from_sq);
     let to = SquareStr::from_shakmaty_sq(&raw_move.to());
 
@@ -313,7 +315,7 @@ pub fn verbose_move_object_from_raw_move(raw_move: Move, chess_pos: &Chess) -> M
         lan: raw_move
             .to_uci(shakmaty::CastlingMode::Chess960)
             .to_string(),
-        san: san_move.to_string(),
+        san: san_string,
         piece,
         captured: captured_piece,
         is_regular_capture: raw_move.is_capture() && !raw_move.is_en_passant(),
@@ -347,6 +349,17 @@ pub fn is_two_square_pawn_move(mov: &Move) -> bool {
     let rank_diff = (to.rank() as i8 - from.rank() as i8).abs();
 
     rank_diff == 2
+}
+
+pub fn san_to_san_plus(san_move: &San, pos_after: &Chess) -> String {
+    let mut san_string = format!("{}", san_move);
+    if pos_after.is_checkmate() {
+        san_string.push_str("#");
+    } else if pos_after.is_check() {
+        san_string.push_str("+");
+    }
+
+    san_string
 }
 
 pub fn castle_data_from_san_move(san_move: &San) -> CastleData {

@@ -1,6 +1,9 @@
 use shakmaty::{Chess, Position, san::San, uci::UciMove};
 
-use crate::{helpers::parsing::verbose_move_object_from_raw_move, tsify_structs::MoveVerbose};
+use crate::{
+    helpers::parsing::{san_to_san_plus, verbose_move_object_from_raw_move},
+    tsify_structs::MoveVerbose,
+};
 
 pub fn uci(chess: &Chess) -> Vec<String> {
     let legal_moves: Vec<String> = chess
@@ -20,9 +23,14 @@ pub fn san(chess: &Chess) -> Vec<String> {
         .legal_moves()
         .iter()
         .map(|el| {
-            let san_move = San::from_move(chess, *el);
+            let mut chess_clone = chess.clone();
 
-            return san_move.to_string();
+            let san_move = San::from_move(chess, *el);
+            chess_clone.play_unchecked(*el);
+
+            let san_str = san_to_san_plus(&san_move, &chess_clone);
+
+            return san_str;
         })
         .collect();
 

@@ -65,8 +65,10 @@ pub mod san_tests {
                 position.moves.split_whitespace().count()
             );
 
+            let moves_list: Vec<&str> = position.moves.split_whitespace().collect();
+
             san_moves.iter().for_each(|san_move| {
-                assert!(position.moves.contains(san_move));
+                assert!(moves_list.contains(&san_move.as_str()));
             });
         }
     }
