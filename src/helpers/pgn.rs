@@ -14,8 +14,6 @@ pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
     let mut tokens: Vec<String> = Vec::new();
     let mut header_string = String::new();
 
-    // TODO: rewtite to `let pgn_result = &wasm_chess.pgn_result`
-
     let initial_fen = if wasm_chess.history.is_empty() {
         wasm_chess.fen(None)
     } else {
