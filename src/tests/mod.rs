@@ -17,3 +17,5 @@ mod pgn_tests;
 pub mod san_tests;
 pub mod square_color_tests;
 pub mod undo_move_test;
+pub mod put_tests;
+mod legal_moves_test;
