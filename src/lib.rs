@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use ordermap::OrderMap;
 use shakmaty::{
-    Chess, Color, EnPassantMode, Move, Piece, Position, Square, fen::Fen, san::San,
-    zobrist::Zobrist64,
+    Chess, Color, EnPassantMode, FromSetup, Move, Piece, Position, Setup, Square, fen::Fen,
+    san::San, zobrist::Zobrist64,
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -19,8 +19,9 @@ use crate::{
         BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, PieceObj, PieceSymbol,
         SquareStr, SuffixSymbol,
         others::{
-            CastlingObj, ColorChar, CommentsObj, HeadersObj, MoveFromSquares, MoveObject,
-            OkOrError, PGNOptions, PreserveHeaders, PrunedCommentsObj, SquareColor, SquareInfoObj,
+            CastlingObj, ColorChar, CommentsObj, HeadersObj, LegalMovesFilterOptions,
+            MoveFromSquares, MoveObject, OkOrError, PGNOptions, PreserveHeaders, PrunedCommentsObj,
+            SquareColor, SquareInfoObj,
         },
     },
 };
@@ -48,10 +49,6 @@ mod tsify_structs;
 struct History {
     raw_move: Move,
 
-    /// Invariants:
-    /// - fen_before corresponds to position_before
-    /// - fen_after is the position after raw_move is applied
-    /// - turn is the side that played raw_move
     fen_before: Fen,
     fen_after: Fen,
     turn: Color,
@@ -69,6 +66,18 @@ pub struct WasmChess {
     // TODO: rename
     pgn_result: Option<PGNResult>,
     seven_tag_roster: OrderMap<&'static str, &'static str>,
+
+    // TODO: implement board manip methods using this
+    // NOTES:
+    // i think any manip operation should make this
+    // field to be Some and any attempt at make_move
+    // will try and re-assemble chess position from this setup
+    // and make it None on success
+    // TODO: related
+    // update this setup after pgn_load, and other such methods
+    // TODO: make these two one struct since they are coupled
+    editable_setup: Option<Setup>,
+    editable_chess_pos: Option<Chess>,
 }
 
 pub type FenString = String;
@@ -126,6 +135,8 @@ impl WasmChess {
                 ("Black", "?"),
                 ("Result", "*"),
             ]),
+            editable_setup: None,
+            editable_chess_pos: None,
         })
     }
 
@@ -565,13 +576,19 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "legalMovesUci")]
-    pub fn legal_moves_uci(&self) -> Vec<MoveString> {
-        helpers::legal_moves::uci(&self.chess)
+    pub fn legal_moves_uci(
+        &self,
+        filter_options: Option<LegalMovesFilterOptions>,
+    ) -> Vec<MoveString> {
+        helpers::legal_moves::uci(&self.chess, filter_options)
     }
 
     #[wasm_bindgen(js_name = "legalMovesSan")]
-    pub fn legal_moves_san(&self) -> Vec<MoveString> {
-        helpers::legal_moves::san(&self.chess)
+    pub fn legal_moves_san(
+        &self,
+        filter_options: Option<LegalMovesFilterOptions>,
+    ) -> Vec<MoveString> {
+        helpers::legal_moves::san(&self.chess, filter_options)
     }
 
     /// # API Discrepancy: chess.js Compatibility
@@ -585,8 +602,11 @@ impl WasmChess {
     ///
     /// **TODO:** Evaluate whether to align with chess.js behavior in a future release.
     #[wasm_bindgen(js_name = "legalMovesVerbose")]
-    pub fn legal_moves_verbose(&self) -> Vec<MoveVerbose> {
-        helpers::legal_moves::verbose(&self.chess)
+    pub fn legal_moves_verbose(
+        &self,
+        filter_options: Option<LegalMovesFilterOptions>,
+    ) -> Vec<MoveVerbose> {
+        helpers::legal_moves::verbose(&self.chess, filter_options)
     }
 
     pub fn perft(&self, depth: usize) -> u64 {
@@ -836,16 +856,68 @@ impl WasmChess {
         Some(piece_obj)
     }
 
-    fn put(&mut self, piece_obj: PieceObj) -> bool {
-        todo!()
-        // self.chess.board_mut().set_piece(
-        //     SquareStr::to_shakmaty_sq(&piece_obj.square),
-        //     piece_obj.to_shakmaty_piece(),
-        // );
+    pub fn put(&mut self, piece_obj: PieceObj, square: SquareStr) -> bool {
+        let piece = piece_obj.to_shakmaty_piece();
+        let square = square.to_shakmaty_sq();
+
+        // TODO: rules:
+        // no more than TWO kings, but can be less
+
+        // TODO: change to behavior below
+        // right not we create editable setup even on only half-valid put() call
+        // but we should only do that if the put action was valid all the way through OR
+        // if the setup already exist
+
+        // TODO: we can do logic by passing board chain of methods on board, but without
+        // knowing which one of the boards it is ?
+        // OR we just do  `if _ {} else {}`
+
+        let setup = self
+            .editable_setup
+            .get_or_insert_with(|| Chess::to_setup(&self.chess, EnPassantMode::Legal));
+
+        setup.board.set_piece_at(square, piece);
+
+        let pos = setup
+            .clone()
+            .position::<Chess>(shakmaty::CastlingMode::Chess960);
+
+        // TODO:
+        // update castling rights
+        // update setup
+        // update ep square
+
+        let is_valid_position = pos.is_ok();
+        self.editable_chess_pos = pos.ok();
+
+        return is_valid_position;
     }
 
     fn remove(&mut self, square: SquareStr) -> Option<PieceObj> {
-        todo!()
+        let square = square.to_shakmaty_sq();
+
+        let setup = self
+            .editable_setup
+            .get_or_insert_with(|| Chess::to_setup(&self.chess, EnPassantMode::Legal));
+
+        let piece = setup.board.remove_piece_at(square);
+
+        let pos = setup
+            .clone()
+            .position::<Chess>(shakmaty::CastlingMode::Chess960);
+
+        self.editable_chess_pos = pos.ok();
+
+        if let Some(p) = piece {
+            return Some(PieceObj::from_shakmaty_piece(&p));
+        }
+
+        // TODO:
+        // update castling rights
+        // update setup
+        // update ep square
+
+        return None;
     }
 
     fn clear(&mut self, preserve_headers: Option<PreserveHeaders>) {
