@@ -104,3 +104,11 @@ pub struct PGNOptions {
     pub max_width: Option<usize>,
     pub newline: Option<String>,
 }
+
+#[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct LegalMovesFilterOptions {
+    pub from_square: Option<SquareStr>,
+    pub piece: Option<PieceSymbol>,
+}
