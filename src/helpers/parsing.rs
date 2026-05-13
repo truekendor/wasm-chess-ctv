@@ -206,23 +206,23 @@ pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError
     Err(MoveParseError::InvalidFormat(move_str.to_string()))
 }
 
-/// Converts a raw chess move into a verbose move object containing comprehensive move metadata.
+/// **Converts a raw chess move into a verbose move object containing comprehensive move metadata.**
 ///
-/// # Important Safety Note
+/// ## Important Safety Note
 /// **Move validation is the caller's responsibility.** This function plays the move unchecked
 /// using `play_unchecked()`, assuming the move is already validated as legal by the caller.
 /// Passing an illegal move may result in an invalid board state or panics.
 ///
-/// # Mutation Note
+/// ## Mutation Note
 /// This function does not mutate the original `WasmChess` struct or the provided `chess_pos`
 /// reference. The position is cloned internally, and all mutations happen on the clone.
 /// The original position remains unchanged.
 ///
-/// # Parameters
+/// ## Parameters
 /// - `raw_move`: The raw move to convert and apply to the position
 /// - `chess_pos`: The current chess position before the move is played
 ///
-/// # Returns
+/// ## Returns
 /// A `MoveVerbose` struct containing:
 /// - Algebraic notation (SAN and LAN/UCI formats)
 /// - Piece and capture information
@@ -232,7 +232,7 @@ pub fn str_to_move(move_str: &str, chess: &Chess) -> Result<Move, MoveParseError
 /// - Square coordinates (from/to)
 /// - Promotion piece (if any)
 ///
-/// # Note
+/// ## Note
 /// Only standard chess and Chess960 positions are supported. The function will panic if
 /// `raw_move.from()` returns `None`, which shouldn't happen for standard chess variants.
 pub fn verbose_move_from_raw_move(raw_move: Move, chess_pos: &Chess) -> MoveVerbose {

@@ -2,7 +2,7 @@ use shakmaty::{Chess, Move, Position, Role, Square, san::San, uci::UciMove};
 
 use crate::{
     helpers::parsing::{san_to_san_plus, verbose_move_from_raw_move},
-    tsify_structs::{MoveVerbose, PieceSymbol, SquareStr, others::LegalMovesFilterOptions},
+    tsify_structs::{MoveVerbose, others::LegalMovesFilterOptions},
 };
 
 pub fn uci(chess: &Chess, filter_options: Option<LegalMovesFilterOptions>) -> Vec<String> {
