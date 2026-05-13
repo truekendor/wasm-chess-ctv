@@ -58,7 +58,7 @@ pub mod san_tests {
             let fen = Some(position.fen.to_string());
             let chess = WasmChess::new(fen).unwrap();
 
-            let san_moves = chess.legal_moves_san();
+            let san_moves = chess.legal_moves_san(None);
 
             pretty_assertions::assert_eq!(
                 san_moves.len(),
