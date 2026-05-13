@@ -36,6 +36,17 @@ impl PieceSymbol {
         }
     }
 
+    pub fn to_shakmaty_piece_role(&self) -> shakmaty::Role {
+        match self {
+            PieceSymbol::P => Role::Pawn,
+            PieceSymbol::N => Role::Knight,
+            PieceSymbol::B => Role::Bishop,
+            PieceSymbol::R => Role::Rook,
+            PieceSymbol::Q => Role::Queen,
+            PieceSymbol::K => Role::King,
+        }
+    }
+
     pub fn from_str(str: &str) -> Option<Self> {
         match str {
             "p" => Some(PieceSymbol::P),
