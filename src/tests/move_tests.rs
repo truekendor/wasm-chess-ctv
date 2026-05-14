@@ -220,4 +220,6 @@ pub mod move_tests {
             WasmChess::new(Some(fen)).unwrap().zobrist_hash()
         );
     }
+
+    // TODO: port rest of the tests
 }
