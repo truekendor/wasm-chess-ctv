@@ -59,6 +59,11 @@ struct History {
     position_after: Chess,
 }
 
+struct EditablePosition {
+    setup: Setup,
+    validated: Option<Chess>,
+}
+
 #[wasm_bindgen]
 pub struct WasmChess {
     chess: Chess,
@@ -78,8 +83,10 @@ pub struct WasmChess {
     // TODO: related
     // update this setup after pgn_load, and other such methods
     // TODO: make these two one struct since they are coupled
-    editable_setup: Option<Setup>,
-    editable_chess_pos: Option<Chess>,
+    editable: Option<EditablePosition>,
+    // TODO: delete later
+    // editable_setup: Option<Setup>,
+    // editable_chess_pos: Option<Chess>,
 }
 
 pub type FenString = String;
@@ -137,8 +144,7 @@ impl WasmChess {
                 ("Black", "?"),
                 ("Result", "*"),
             ]),
-            editable_setup: None,
-            editable_chess_pos: None,
+            editable: None,
         })
     }
 
@@ -191,21 +197,13 @@ impl WasmChess {
         // NOTE:
         // I don't even know if we can just skip fen validation
         // {skip_validation: bool}
+        // TODO: try add it anyway?
     ) -> Result<(), String> {
-        self.reset_history();
-
         let fen: Fen = starting_fen.parse::<Fen>().map_err(|err| {
             return format!("Invalid FEN '{starting_fen}': {err}");
         })?;
 
-        self.chess = fen
-            .clone()
-            .into_position(shakmaty::CastlingMode::Chess960)
-            .map_err(|err| {
-                return format!("Error {err}\nFEN: {fen}");
-            })?;
-
-        self.reset_repetition_table_and_hash();
+        self.set_fen(fen)?;
 
         Ok(())
     }
@@ -215,11 +213,7 @@ impl WasmChess {
         self.chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
             Ok(val) => val,
             Err(err) => {
-                return Err(format!(
-                    "Error converting FEN into chess position\nError message: {}\nFEN: {}",
-                    err,
-                    fen.to_string()
-                ));
+                return Err(format!("Error {err}\nFEN: {fen}"));
             }
         };
 
