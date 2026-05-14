@@ -20,6 +20,40 @@ pub struct PGNResult {
 
 const SUFFIX_LIST: [&str; 6] = ["!", "?", "!!", "??", "!?", "?!"];
 
+const SEVEN_TAG_ROSTER: [&str; 7] = ["Event", "Site", "Date", "Round", "White", "Black", "Result"];
+const SUPPLEMENTAL_TAGS: [(&str, Option<&str>); 30] = [
+    ("WhiteTitle", None),
+    ("BlackTitle", None),
+    ("WhiteElo", None),
+    ("BlackElo", None),
+    ("WhiteUSCF", None),
+    ("BlackUSCF", None),
+    ("WhiteNA", None),
+    ("BlackNA", None),
+    ("WhiteType", None),
+    ("BlackType", None),
+    ("EventDate", None),
+    ("EventSponsor", None),
+    ("Section", None),
+    ("Stage", None),
+    ("Board", None),
+    ("Opening", None),
+    ("Variation", None),
+    ("SubVariation", None),
+    ("ECO", None),
+    ("NIC", None),
+    ("Time", None),
+    ("UTCTime", None),
+    ("UTCDate", None),
+    ("TimeControl", None),
+    ("SetUp", None),
+    ("FEN", None),
+    ("Termination", None),
+    ("Annotator", None),
+    ("Mode", None),
+    ("PlyCount", None),
+];
+
 impl Visitor for PGNResult {
     type Tags = ();
     type Movetext = WasmChess;
@@ -65,6 +99,10 @@ impl Visitor for PGNResult {
                     pos
                 }
                 Err(err) => {
+                    // TODO:
+                    // add recovery from too much material,
+                    // and invalid castling rights ?
+
                     return ControlFlow::Break(Err(format!(
                         "Position error: {} for FEN: {}",
                         err, fen
@@ -74,15 +112,16 @@ impl Visitor for PGNResult {
         };
 
         if let Ok(value) = tag_val {
-            self.headers.insert(tag_key, value.to_string());
+            self.headers.insert(tag_key.clone(), value.to_string());
 
             return ControlFlow::Continue(());
-        };
+        }
 
         ControlFlow::Break(Err(format!("Error reading PGN. ")))
     }
 
     fn begin_movetext(&mut self, _tags: Self::Tags) -> ControlFlow<Self::Output, Self::Movetext> {
+        self.reorder_headers();
         ControlFlow::Continue(WasmChess::new(Some(self.starting_fen.to_string())).unwrap())
     }
 
@@ -193,4 +232,32 @@ pub fn parse_pgn(pgn: &str) -> Result<(PGNResult, WasmChess), String> {
             return Err(err.to_string());
         }
     };
+}
+
+impl PGNResult {
+    pub fn reorder_headers(&mut self) {
+        let mut ordered: OrderMap<String, Option<String>> = OrderMap::new();
+
+        // Seven tag roster first
+        for key in SEVEN_TAG_ROSTER {
+            ordered.insert(key.to_string(), self.headers.get(key).cloned());
+        }
+
+        // Supplemental tags second
+        for (key, _) in SUPPLEMENTAL_TAGS {
+            ordered.insert(key.to_string(), self.headers.get(key).cloned());
+        }
+
+        // Remaining custom tags last
+        for (key, val) in self.headers.iter() {
+            if !ordered.contains_key(key) {
+                ordered.insert(key.clone(), Some(val.clone()));
+            }
+        }
+
+        self.headers = ordered
+            .into_iter()
+            .filter_map(|(k, v)| v.map(|v| (k, v)))
+            .collect();
+    }
 }

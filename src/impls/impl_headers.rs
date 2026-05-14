@@ -8,6 +8,8 @@ impl WasmChess {
 
         let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
 
+        pgn_result.reorder_headers();
+
         HeadersObj {
             headers_data: pgn_result.headers.clone(),
         }
@@ -37,5 +39,18 @@ impl WasmChess {
                 pgn.headers.remove(&key).is_some()
             })
             .unwrap_or(false)
+    }
+
+    fn populate_seven_tag_roster(&mut self) {
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+
+        if pgn_result.headers.len() < 1 {
+            self.seven_tag_roster.iter().for_each(|(key, val)| {
+                pgn_result
+                    .headers
+                    .entry(key.to_string())
+                    .or_insert(val.to_string());
+            });
+        }
     }
 }
