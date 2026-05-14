@@ -1,8 +1,13 @@
+/// these tests from chess.js test suite for moves()
+/// @link https://github.com/jhlywa/chess.js/blob/master/__tests__/moves.test.ts
 #[cfg(test)]
 pub mod legal_moves_test {
     use crate::{
         WasmChess,
-        tsify_structs::{PieceSymbol, SquareStr, others::LegalMovesFilterOptions},
+        tsify_structs::{
+            MoveVerbose, PieceSymbol, SquareStr,
+            others::{ColorChar, LegalMovesFilterOptions},
+        },
     };
 
     #[test]
@@ -149,9 +154,94 @@ pub mod legal_moves_test {
         pretty_assertions::assert_eq!(legal_moves.len(), 0);
     }
 
-    // TODO: implement
+    #[test]
     fn single_square_verbose() {
-        //
+        let fen = "8/7K/8/8/1R6/k7/1R1p4/8 b - - 0 1".to_string();
+        let chess = WasmChess::new(Some(fen)).unwrap();
+
+        let answer = vec![
+            MoveVerbose {
+                color: ColorChar::B,
+                from: SquareStr::D2,
+                to: SquareStr::D1,
+                piece: PieceSymbol::P,
+                promotion: Some(PieceSymbol::Q),
+                san: "d1=Q".to_string(),
+                lan: "d2d1q".to_string(),
+                before: "8/7K/8/8/1R6/k7/1R1p4/8 b - - 0 1".to_string(),
+                after: "8/7K/8/8/1R6/k7/1R6/3q4 w - - 0 2".to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::B,
+                from: SquareStr::D2,
+                to: SquareStr::D1,
+                piece: PieceSymbol::P,
+                promotion: Some(PieceSymbol::R),
+                san: "d1=R".to_string(),
+                lan: "d2d1r".to_string(),
+                before: "8/7K/8/8/1R6/k7/1R1p4/8 b - - 0 1".to_string(),
+                after: "8/7K/8/8/1R6/k7/1R6/3r4 w - - 0 2".to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::B,
+                from: SquareStr::D2,
+                to: SquareStr::D1,
+                piece: PieceSymbol::P,
+                promotion: Some(PieceSymbol::B),
+                san: "d1=B".to_string(),
+                lan: "d2d1b".to_string(),
+                before: "8/7K/8/8/1R6/k7/1R1p4/8 b - - 0 1".to_string(),
+                after: "8/7K/8/8/1R6/k7/1R6/3b4 w - - 0 2".to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::B,
+                from: SquareStr::D2,
+                to: SquareStr::D1,
+                piece: PieceSymbol::P,
+                promotion: Some(PieceSymbol::N),
+                san: "d1=N".to_string(),
+                lan: "d2d1n".to_string(),
+                before: "8/7K/8/8/1R6/k7/1R1p4/8 b - - 0 1".to_string(),
+                after: "8/7K/8/8/1R6/k7/1R6/3n4 w - - 0 2".to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+        ];
+
+        let legal_moves_verbose = chess.legal_moves_verbose(Some(LegalMovesFilterOptions {
+            from_square: Some(SquareStr::D2),
+            piece: None,
+        }));
+
+        pretty_assertions::assert_eq!(legal_moves_verbose.len(), answer.len());
+
+        pretty_assertions::assert_eq!(legal_moves_verbose, answer);
     }
 
     #[test]
@@ -213,9 +303,181 @@ pub mod legal_moves_test {
         pretty_assertions::assert_eq!(legal_moves.len(), 0);
     }
 
-    // #[test]
+    #[test]
     fn moves_verbose_piece_filter() {
-        // TODO:
+        let fen = "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19".to_string();
+        let chess = WasmChess::new(Some(fen)).unwrap();
+
+        let answer = vec![
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::A1,
+                to: SquareStr::B1,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Rab1".to_string(),
+                lan: "a1b1".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/1RR3K1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::A1,
+                to: SquareStr::A2,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Ra2".to_string(),
+                lan: "a1a2".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/RP2QPP1/2R3K1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::C1,
+                to: SquareStr::B1,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Rcb1".to_string(),
+                lan: "c1b1".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/RR4K1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::C1,
+                to: SquareStr::D1,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Rd1".to_string(),
+                lan: "c1d1".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R2R2K1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::C1,
+                to: SquareStr::E1,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Re1".to_string(),
+                lan: "c1e1".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R3R1K1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::C1,
+                to: SquareStr::F1,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Rf1".to_string(),
+                lan: "c1f1".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R4RK1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::C1,
+                to: SquareStr::C2,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Rc2".to_string(),
+                lan: "c1c2".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1PR1QPP1/R5K1 b - - 1 19"
+                    .to_string(),
+                captured: None,
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: false,
+            },
+            MoveVerbose {
+                color: ColorChar::W,
+                from: SquareStr::C1,
+                to: SquareStr::C3,
+                piece: PieceSymbol::R,
+                promotion: None,
+                san: "Rxc3".to_string(),
+                lan: "c1c3".to_string(),
+                before: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1pP3P/1P2QPP1/R1R3K1 w - - 0 19"
+                    .to_string(),
+                after: "r4rk1/1p4p1/p1n1p2p/2p1p1q1/4P1N1/P1RP3P/1P2QPP1/R5K1 b - - 0 19"
+                    .to_string(),
+                captured: Some(PieceSymbol::P),
+                is_big_pawn: false,
+                is_castle: false,
+                is_en_passant: false,
+                is_kingside_castle: false,
+                is_queenside_castle: false,
+                is_regular_capture: true,
+            },
+        ];
+
+        let legal_moves_verbose = chess.legal_moves_verbose(Some(LegalMovesFilterOptions {
+            from_square: None,
+            piece: Some(PieceSymbol::R),
+        }));
+
+        pretty_assertions::assert_eq!(legal_moves_verbose.len(), answer.len());
+        pretty_assertions::assert_eq!(legal_moves_verbose, answer);
     }
 
     #[test]
@@ -243,7 +505,7 @@ pub mod legal_moves_test {
         });
     }
 
-    fn moves_no_kings() {
+    fn moves_no_king_moves() {
         // TODO:
     }
 }
