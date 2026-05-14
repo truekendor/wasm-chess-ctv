@@ -2,15 +2,14 @@ use std::collections::HashMap;
 
 use ordermap::OrderMap;
 use shakmaty::{
-    Chess, Color, EnPassantMode, Move, Piece, Position, Setup, Square, fen::Fen, san::San,
-    zobrist::Zobrist64,
+    Chess, Color, EnPassantMode, FromSetup, Move, Piece, Position, Setup, Square, fen::Fen,
+    san::San, zobrist::Zobrist64,
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     helpers::{
-        ascii,
         parsing::{self, san_to_san_plus, verbose_move_from_raw_move},
         pgn::chess_to_pgn,
         pgn_reader::PGNResult,
