@@ -122,11 +122,8 @@ impl WasmChess {
         todo!()
     }
 
-    pub(crate) fn set_castling_rights(
-        &mut self,
-        color: ColorChar,
-        castling_obj: CastlingObj,
-    ) -> bool {
+    #[wasm_bindgen(js_name = "setCastlingRights")]
+    pub fn set_castling_rights(&mut self, color: ColorChar, castling_obj: CastlingObj) -> bool {
         let editable = match self.editable.as_mut() {
             Some(val) => val,
             None => &mut EditablePosition {
@@ -170,10 +167,14 @@ impl WasmChess {
             // TODO:
             // why even bother with this if we immediately replace
             self.chess = validated;
-            return true;
         };
 
-        return false;
+        let rights_final = self.get_castling_rights(color);
+
+        let aaa = (castling_obj.king.is_none() || rights_final.king == castling_obj.king)
+            && (castling_obj.queen.is_none() || rights_final.queen == castling_obj.queen);
+
+        return aaa;
     }
 
     fn set_en_passant_square() {
