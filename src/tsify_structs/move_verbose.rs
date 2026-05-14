@@ -55,7 +55,7 @@ pub struct MoveVerbose {
     /// For exact chess.js `isCapture()` compatibility, use this field.
     pub is_regular_capture: bool,
 
-    pub promotion: Option<String>,
+    pub promotion: Option<PieceSymbol>,
 
     pub san: String,
     pub lan: String,
