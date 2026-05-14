@@ -275,8 +275,8 @@ impl WasmChess {
                 let kingside = castles_bitboard.contains(Square::H1);
 
                 return CastlingObj {
-                    king: kingside,
-                    queen: queenside,
+                    king: Some(kingside),
+                    queen: Some(queenside),
                 };
             }
             ColorChar::B => {
@@ -284,8 +284,8 @@ impl WasmChess {
                 let kingside = castles_bitboard.contains(Square::H8);
 
                 return CastlingObj {
-                    king: kingside,
-                    queen: queenside,
+                    king: Some(kingside),
+                    queen: Some(queenside),
                 };
             }
         };
