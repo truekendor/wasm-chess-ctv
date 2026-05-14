@@ -29,17 +29,4 @@ impl WasmChess {
 
         chess_to_pgn(self, options)
     }
-
-    pub(crate) fn populate_seven_tag_roster(&mut self) {
-        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
-
-        if pgn_result.headers.len() < 1 {
-            self.seven_tag_roster.iter().for_each(|(key, val)| {
-                pgn_result
-                    .headers
-                    .entry(key.to_string())
-                    .or_insert(val.to_string());
-            });
-        }
-    }
 }
