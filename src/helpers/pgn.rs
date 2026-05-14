@@ -3,7 +3,7 @@ use shakmaty::{Position, san::San};
 use crate::{
     WasmChess,
     helpers::{parsing::san_to_san_plus, pgn_reader::PGNResult},
-    tsify_structs::others::{ColorChar, PGNOptions},
+    tsify_structs::others::PGNOptions,
 };
 
 pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
