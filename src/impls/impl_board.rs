@@ -2,7 +2,7 @@ use super::*;
 
 #[wasm_bindgen]
 impl WasmChess {
-    fn put(&mut self, piece_obj: PieceObj, square: SquareStr) -> bool {
+    pub(crate) fn put(&mut self, piece_obj: PieceObj, square: SquareStr) -> bool {
         let piece = piece_obj.to_shakmaty_piece();
         let square = square.to_shakmaty_sq();
 
@@ -41,13 +41,23 @@ impl WasmChess {
         // TODO:
         // immediatelly try to replace current pos with new one
 
-        if let Some(validated) = pos.ok() {
+        let pos = match pos {
+            Ok(val) => Some(val),
+            Err(err) => {
+                let result = err.ignore_too_much_material();
+
+                result.ok()
+            }
+        };
+
+        if let Some(validated) = pos {
             editable.validated = Some(validated.clone());
             // TODO:
             // why even bother with this if we immediately replace
             self.chess = validated;
             return true;
         }
+
         editable.validated = None;
 
         return false;
@@ -96,6 +106,15 @@ impl WasmChess {
 
         let empty_setup = Setup::empty();
 
+        let chess = Chess::from_setup(empty_setup, shakmaty::CastlingMode::Chess960);
+
+        match chess {
+            Ok(val) => val,
+            Err(err) => {
+                todo!()
+            }
+        };
+
         todo!()
     }
 
@@ -103,8 +122,58 @@ impl WasmChess {
         todo!()
     }
 
-    fn set_castling_rights(&mut self, color: ColorChar, castling_obj: CastlingObj) -> bool {
-        todo!()
+    pub(crate) fn set_castling_rights(
+        &mut self,
+        color: ColorChar,
+        castling_obj: CastlingObj,
+    ) -> bool {
+        let editable = match self.editable.as_mut() {
+            Some(val) => val,
+            None => &mut EditablePosition {
+                setup: Chess::to_setup(&self.chess, EnPassantMode::Legal),
+                validated: None,
+            },
+        };
+
+        let setup = &mut editable.setup;
+
+        let (kingside_sq, queenside_sq) = match color {
+            ColorChar::W => (Square::H1, Square::A1),
+            ColorChar::B => (Square::H8, Square::A8),
+        };
+
+        if castling_obj.king == Some(true) {
+            setup.castling_rights.add(kingside_sq);
+        } else if castling_obj.king == Some(false) {
+            let _ = setup.castling_rights.remove(kingside_sq);
+        }
+
+        if castling_obj.queen == Some(true) {
+            setup.castling_rights.add(queenside_sq);
+        } else if castling_obj.queen == Some(false) {
+            let _ = setup.castling_rights.remove(queenside_sq);
+        }
+
+        let chess_temp = Chess::from_setup(setup.clone(), shakmaty::CastlingMode::Chess960);
+
+        let pos: Option<Chess> = match chess_temp {
+            Ok(val) => Some(val),
+            Err(err) => {
+                let result = err.ignore_invalid_castling_rights();
+
+                result.ok()
+            }
+        };
+
+        if let Some(validated) = pos {
+            editable.validated = Some(validated.clone());
+            // TODO:
+            // why even bother with this if we immediately replace
+            self.chess = validated;
+            return true;
+        };
+
+        return false;
     }
 
     fn set_en_passant_square() {
