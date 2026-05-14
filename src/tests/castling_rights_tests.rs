@@ -14,16 +14,16 @@ pub mod castling_rights_tests {
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::W),
             CastlingObj {
-                king: false,
-                queen: true
+                king: Some(false),
+                queen: Some(true)
             }
         );
 
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::B),
             CastlingObj {
-                king: false,
-                queen: true
+                king: Some(false),
+                queen: Some(true)
             }
         );
     }
@@ -37,16 +37,16 @@ pub mod castling_rights_tests {
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::W),
             CastlingObj {
-                king: true,
-                queen: true
+                king: Some(true),
+                queen: Some(true)
             }
         );
 
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::B),
             CastlingObj {
-                king: true,
-                queen: true
+                king: Some(true),
+                queen: Some(true)
             }
         );
 
@@ -56,15 +56,15 @@ pub mod castling_rights_tests {
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::W),
             CastlingObj {
-                king: true,
-                queen: false
+                king: Some(true),
+                queen: Some(false)
             }
         );
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::B),
             CastlingObj {
-                king: false,
-                queen: true
+                king: Some(false),
+                queen: Some(true)
             }
         );
     }
@@ -78,8 +78,8 @@ pub mod castling_rights_tests {
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::W),
             CastlingObj {
-                king: true,
-                queen: true
+                king: Some(true),
+                queen: Some(true)
             }
         );
 
@@ -88,8 +88,8 @@ pub mod castling_rights_tests {
         pretty_assertions::assert_eq!(
             chess.get_castling_rights(ColorChar::W),
             CastlingObj {
-                king: false,
-                queen: false
+                king: Some(false),
+                queen: Some(false)
             }
         );
     }
