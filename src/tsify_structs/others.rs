@@ -59,8 +59,8 @@ pub struct PrunedCommentsObj {
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct CastlingObj {
-    pub king: bool,
-    pub queen: bool,
+    pub king: Option<bool>,
+    pub queen: Option<bool>,
 }
 
 #[derive(tsify::Tsify, Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -69,6 +69,22 @@ pub struct CastlingObj {
 pub enum ColorChar {
     W,
     B,
+}
+
+impl ColorChar {
+    pub fn to_shakmaty_color(&self) -> shakmaty::Color {
+        match self {
+            ColorChar::W => shakmaty::Color::White,
+            ColorChar::B => shakmaty::Color::Black,
+        }
+    }
+
+    pub fn from_shakmaty_color(color: &shakmaty::Color) -> Self {
+        match color {
+            shakmaty::Color::White => ColorChar::W,
+            shakmaty::Color::Black => ColorChar::B,
+        }
+    }
 }
 
 // this is like a custom result
