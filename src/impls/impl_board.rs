@@ -171,10 +171,11 @@ impl WasmChess {
 
         let rights_final = self.get_castling_rights(color);
 
-        let aaa = (castling_obj.king.is_none() || rights_final.king == castling_obj.king)
+        let successfully_set = (castling_obj.king.is_none()
+            || rights_final.king == castling_obj.king)
             && (castling_obj.queen.is_none() || rights_final.queen == castling_obj.queen);
 
-        return aaa;
+        return successfully_set;
     }
 
     fn set_en_passant_square() {
