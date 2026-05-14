@@ -1,5 +1,5 @@
 use ordermap::OrderMap;
-use shakmaty::{CastlingMode, Chess, fen::Fen};
+use shakmaty::{CastlingMode, Chess, KnownOutcome, fen::Fen};
 use std::{io, ops::ControlFlow};
 
 use pgn_reader::{RawTag, Reader, SanPlus, Visitor};
@@ -14,6 +14,8 @@ pub struct PGNResult {
     pub comments_map: OrderMap<String, String>,
     pub suffix_map: OrderMap<String, String>,
     pub nag_map: OrderMap<String, Vec<String>>,
+
+    pub known_outcome: Option<KnownOutcome>,
 }
 
 const SUFFIX_LIST: [&str; 6] = ["!", "?", "!!", "??", "!?", "?!"];
@@ -153,6 +155,23 @@ impl Visitor for PGNResult {
             "Error parsing comment from PGN: {:?}",
             raw_comment
         )))
+    }
+
+    fn outcome(
+        &mut self,
+        _chess: &mut Self::Movetext,
+        outcome: shakmaty::Outcome,
+    ) -> ControlFlow<Self::Output> {
+        match outcome {
+            shakmaty::Outcome::Known(known_outcome) => {
+                self.known_outcome = Some(known_outcome);
+                ControlFlow::Continue(())
+            }
+            shakmaty::Outcome::Unknown => {
+                self.known_outcome = None;
+                ControlFlow::Continue(())
+            }
+        }
     }
 
     fn end_game(&mut self, wasm_chess: Self::Movetext) -> Self::Output {
