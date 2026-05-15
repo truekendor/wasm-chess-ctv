@@ -44,12 +44,13 @@ pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
         let prefix = if index == 0 {
             match history_entry.turn {
                 shakmaty::Color::White => format!("{move_number}."),
-                shakmaty::Color::Black => format!("{move_number}..."),
+                shakmaty::Color::Black => format!("{move_number}. ..."),
             }
-        } else if index % 2 == 0 {
-            format!("{move_number}.")
         } else {
-            String::new()
+            match history_entry.turn {
+                shakmaty::Color::White => format!("{move_number}."),
+                shakmaty::Color::Black => String::new(),
+            }
         };
 
         if prefix.is_empty() {
