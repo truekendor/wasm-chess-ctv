@@ -10,18 +10,10 @@ impl WasmChess {
     pub fn load_pgn(&mut self, pgn: &str) -> Result<(), String> {
         let mut reader = Reader::new(io::Cursor::new(pgn));
 
-        match reader.read_game(self) {
-            Ok(output) => {
-                if let Some(output) = output {
-                    output.map_err(|err| err)?;
-                }
-
-                return Ok(());
-            }
-            Err(err) => {
-                return Err(err.to_string());
-            }
-        };
+        reader
+            .read_game(self)
+            .map_err(|err| err.to_string())?
+            .unwrap_or(Ok(()))
     }
 
     #[wasm_bindgen(js_name = "pgn")]
