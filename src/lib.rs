@@ -190,14 +190,37 @@ impl WasmChess {
     /// ```js
     /// chess.load("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     /// ```
+
+    //  Note:
+    // I don't even know if we can just skip fen validation
+    // {skip_validation: bool}
+    // TODO: try add it anyway?
     pub fn load(
         &mut self,
-        starting_fen: FenString,
-        // NOTE:
-        // I don't even know if we can just skip fen validation
-        // {skip_validation: bool}
-        // TODO: try add it anyway?
+        starting_fen: &str,
+        preserve_headers: Option<PreserveHeaders>,
     ) -> Result<(), String> {
+        self.load_inner(starting_fen, preserve_headers)?;
+
+        self.set_header("FEN".to_string(), starting_fen.to_string());
+        self.set_header("SetUp".to_string(), "1".to_string());
+
+        Ok(())
+    }
+
+    // needed specifically for pgn to not override headers
+    fn load_inner(
+        &mut self,
+        starting_fen: &str,
+        preserve_headers: Option<PreserveHeaders>,
+    ) -> Result<(), String> {
+        self.reset_history();
+        self.reset_repetition_table_and_hash();
+
+        match preserve_headers.and_then(|val| val.preserve_headers.then_some(())) {
+            Some(_) => self.reset_pgn_result_except_headers(),
+            None => self.reset_pgn_result(),
+        }
         let fen: Fen = starting_fen.parse::<Fen>().map_err(|err| {
             return format!("Invalid FEN '{starting_fen}': {err}");
         })?;
@@ -216,18 +239,31 @@ impl WasmChess {
             }
         };
 
-        self.reset_all();
-
         Ok(())
     }
 
     fn reset_all(&mut self) {
         self.reset_history();
         self.reset_repetition_table_and_hash();
+        self.reset_pgn_result();
+    }
+
+    fn reset_pgn_result(&mut self) {
+        self.pgn_result = None;
+    }
+
+    fn reset_pgn_result_except_headers(&mut self) {
+        let pgn_result = self.pgn_result.get_or_insert_with(|| PGNResult::default());
+
+        pgn_result.comments_map.clear();
+        pgn_result.nag_map.clear();
+        pgn_result.suffix_map.clear();
+
+        pgn_result.known_outcome = None;
+        pgn_result.starting_fen = Fen::empty();
     }
 
     fn reset_history(&mut self) {
-        self.pgn_result = None;
         self.history.clear();
     }
 

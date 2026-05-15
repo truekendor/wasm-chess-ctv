@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
-    let newline = options.newline.unwrap_or("\n".to_string());
+    let newline = options.newline.unwrap_or("\r\n".to_string());
     let newline_char = newline.as_str();
     let max_line_width = options.max_width.unwrap_or(0);
 
@@ -20,9 +20,11 @@ pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
         wasm_chess.history[0].fen_before.clone().to_string()
     };
 
+    let headers = wasm_chess.get_headers().headers_data;
+
     let pgn_result = wasm_chess.pgn_result.get_or_insert_with(PGNResult::default);
 
-    for (key, value) in &pgn_result.headers {
+    for (key, value) in headers {
         header_string.push_str(&format!("[{key} \"{value}\"]{newline_char}"));
     }
 
@@ -141,5 +143,5 @@ pub fn chess_to_pgn(wasm_chess: &mut WasmChess, options: PGNOptions) -> String {
         }
     }
 
-    result_string.trim().to_string()
+    result_string
 }

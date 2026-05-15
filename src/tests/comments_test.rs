@@ -473,7 +473,7 @@ pub mod comments_test {
                 }]
             );
 
-            chess.load(chess.fen(None)).unwrap();
+            chess.load(chess.fen(None).as_str(), None).unwrap();
 
             pretty_assertions::assert_eq!(chess.get_comments(), vec![]);
         }

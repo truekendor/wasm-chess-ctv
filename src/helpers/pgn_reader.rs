@@ -1,10 +1,10 @@
 use ordermap::OrderMap;
 use shakmaty::{CastlingMode, Chess, KnownOutcome, fen::Fen};
-use std::{io, ops::ControlFlow};
+use std::ops::ControlFlow;
 
-use pgn_reader::{RawTag, Reader, SanPlus, Visitor};
+use pgn_reader::{RawTag, SanPlus, Visitor};
 
-use crate::WasmChess;
+use crate::{WasmChess, tsify_structs::others::PreserveHeaders};
 
 #[derive(Debug, Default, Clone)]
 pub struct PGNResult {
@@ -54,25 +54,17 @@ const SUPPLEMENTAL_TAGS: [(&str, Option<&str>); 30] = [
     ("PlyCount", None),
 ];
 
-impl Visitor for PGNResult {
+impl Visitor for WasmChess {
     type Tags = ();
-    type Movetext = WasmChess;
-    type Output = Result<WasmChess, String>;
+    type Movetext = ();
+    type Output = Result<(), String>;
 
     fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
-        self.comments_map = OrderMap::new();
-        self.suffix_map = OrderMap::new();
-        self.nag_map = OrderMap::new();
+        let pgn_result = self.pgn_result.get_or_insert_with(|| PGNResult::default());
 
-        self.headers = OrderMap::from([
-            ("Event".to_string(), "?".to_string()),
-            ("Site".to_string(), "?".to_string()),
-            ("Date".to_string(), "????.??.??".to_string()),
-            ("Round".to_string(), "?".to_string()),
-            ("White".to_string(), "?".to_string()),
-            ("Black".to_string(), "?".to_string()),
-            ("Result".to_string(), "*".to_string()),
-        ]);
+        pgn_result.comments_map = OrderMap::new();
+        pgn_result.suffix_map = OrderMap::new();
+        pgn_result.nag_map = OrderMap::new();
 
         ControlFlow::Continue(())
     }
@@ -83,20 +75,30 @@ impl Visitor for PGNResult {
         name: &[u8],
         value: RawTag<'_>,
     ) -> ControlFlow<Self::Output> {
+        let pgn_result = self.pgn_result.get_or_insert_with(|| PGNResult::default());
+
         let tag_key: String = name.iter().map(|b| *b as char).collect();
         let tag_val = str::from_utf8(value.as_bytes());
 
+        let Ok(tag_value) = tag_val else {
+            return ControlFlow::Break(Err(format!(
+                "Error reading tag value\nTag Key: {}",
+                tag_key
+            )));
+        };
+
         if name.to_ascii_uppercase() == b"FEN" {
-            let fen = match Fen::from_ascii(value.as_bytes()) {
+            let fen = match Fen::from_ascii(tag_value.as_bytes()) {
                 Ok(fen) => fen,
                 Err(err) => {
                     return ControlFlow::Break(Err(format!("Error parsing fen from PGN: {}", err)));
                 }
             };
             match fen.clone().into_position::<Chess>(CastlingMode::Chess960) {
-                Ok(pos) => {
-                    self.starting_fen = fen;
-                    pos
+                Ok(chess_pos) => {
+                    pgn_result.starting_fen = fen;
+
+                    chess_pos
                 }
                 Err(err) => {
                     // TODO:
@@ -111,22 +113,42 @@ impl Visitor for PGNResult {
             };
         };
 
-        if let Ok(value) = tag_val {
-            self.headers.insert(tag_key.clone(), value.to_string());
+        pgn_result
+            .headers
+            .insert(tag_key.clone(), tag_value.to_string());
 
-            return ControlFlow::Continue(());
-        }
-
-        ControlFlow::Break(Err(format!("Error reading PGN. ")))
+        return ControlFlow::Continue(());
     }
 
     fn begin_movetext(&mut self, _tags: Self::Tags) -> ControlFlow<Self::Output, Self::Movetext> {
-        self.reorder_headers();
-        ControlFlow::Continue(WasmChess::new(Some(self.starting_fen.to_string())).unwrap())
+        let starting_fen_str = {
+            let pgn_result: &mut PGNResult = self.pgn_result.get_or_insert_with(PGNResult::default);
+            pgn_result.reorder_headers();
+
+            &pgn_result.starting_fen.to_string()
+        };
+
+        match self.load_inner(
+            &starting_fen_str,
+            Some(PreserveHeaders {
+                preserve_headers: true,
+            }),
+        ) {
+            Ok(_) => (),
+            Err(err) => {
+                return ControlFlow::Break(Err(format!("{}", err)));
+            }
+        }
+
+        ControlFlow::Continue(())
     }
 
-    fn san(&mut self, chess: &mut Self::Movetext, san_plus: SanPlus) -> ControlFlow<Self::Output> {
-        match chess.make_move(&san_plus.san.to_string()) {
+    fn san(
+        &mut self,
+        _movetext: &mut Self::Movetext,
+        san_plus: SanPlus,
+    ) -> ControlFlow<Self::Output> {
+        match self.make_move(&san_plus.san.to_string()) {
             Ok(_) => {
                 return ControlFlow::Continue(());
             }
@@ -136,13 +158,14 @@ impl Visitor for PGNResult {
 
     fn nag(
         &mut self,
-        wasm_chess: &mut Self::Movetext,
+        _movetext: &mut Self::Movetext,
         nag: pgn_reader::Nag,
     ) -> ControlFlow<Self::Output> {
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+
         let nag = nag.to_string();
 
-        let fen_key =
-            Fen::from_position(&wasm_chess.chess, shakmaty::EnPassantMode::Legal).to_string();
+        let fen_key = Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal).to_string();
 
         let nag_str = nag.as_str();
         match nag_str {
@@ -160,7 +183,9 @@ impl Visitor for PGNResult {
 
                     let char = SUFFIX_LIST[suffix_number as usize];
 
-                    self.suffix_map.insert(fen_key.clone(), char.to_owned());
+                    pgn_result
+                        .suffix_map
+                        .insert(fen_key.clone(), char.to_owned());
                 }
 
                 return ControlFlow::Continue(());
@@ -168,24 +193,30 @@ impl Visitor for PGNResult {
             _ => (),
         }
 
-        self.nag_map.entry(fen_key).or_insert(Vec::new()).push(nag);
+        pgn_result
+            .nag_map
+            .entry(fen_key)
+            .or_insert(Vec::new())
+            .push(nag);
 
         ControlFlow::Continue(())
     }
 
     fn comment(
         &mut self,
-        wasm_chess: &mut Self::Movetext,
+        _movetext: &mut Self::Movetext,
         comment: pgn_reader::RawComment<'_>,
     ) -> ControlFlow<Self::Output> {
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+
         let raw_comment = comment;
         let comment = str::from_utf8(&raw_comment.as_bytes());
 
         if let Ok(val) = comment {
             let fen_key =
-                Fen::from_position(&wasm_chess.chess, shakmaty::EnPassantMode::Legal).to_string();
+                Fen::from_position(&self.chess, shakmaty::EnPassantMode::Legal).to_string();
 
-            self.comments_map.insert(fen_key, val.to_string());
+            pgn_result.comments_map.insert(fen_key, val.to_string());
 
             return ControlFlow::Continue(());
         }
@@ -198,40 +229,26 @@ impl Visitor for PGNResult {
 
     fn outcome(
         &mut self,
-        _chess: &mut Self::Movetext,
+        _movetext: &mut Self::Movetext,
         outcome: shakmaty::Outcome,
     ) -> ControlFlow<Self::Output> {
+        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+
         match outcome {
             shakmaty::Outcome::Known(known_outcome) => {
-                self.known_outcome = Some(known_outcome);
+                pgn_result.known_outcome = Some(known_outcome);
                 ControlFlow::Continue(())
             }
             shakmaty::Outcome::Unknown => {
-                self.known_outcome = None;
+                pgn_result.known_outcome = None;
                 ControlFlow::Continue(())
             }
         }
     }
 
-    fn end_game(&mut self, wasm_chess: Self::Movetext) -> Self::Output {
-        return Ok(wasm_chess);
+    fn end_game(&mut self, _movetext: Self::Movetext) -> Self::Output {
+        return Ok(());
     }
-}
-
-pub fn parse_pgn(pgn: &str) -> Result<(PGNResult, WasmChess), String> {
-    let mut reader = Reader::new(io::Cursor::new(pgn));
-    let mut pgn_headers = PGNResult::default();
-
-    match reader.read_game(&mut pgn_headers) {
-        Ok(chess) => {
-            let chess = chess.unwrap_or_else(|| WasmChess::new(None)).unwrap();
-
-            return Ok((pgn_headers, chess));
-        }
-        Err(err) => {
-            return Err(err.to_string());
-        }
-    };
 }
 
 impl PGNResult {

@@ -51,61 +51,9 @@ Nxg6$1 {-0.86/30 5.212s, tl=233.463s, latency=0.000s, n=507732918, sd=73, nps=97
 7. Qh6 $6 {+1.03/35 34.088s, tl=193.840s, latency=0.001s, n=3653550737, sd=69, nps=107180400, hashfull=460, tbhits=4577, pv="h1h6 e8f8 c4d5 d8d5 g1h1 a8c7 h6h2 c8g4 h2g3 g4d7 b1e4 d5d6 c1d3 f7f5 e4f3 f8g8 d3e5 b8d8 e5g6 g7g6 g3e5 d8f8 e1d3 g6h6 h1h6 f8h6 e2e3 b7b6 b3b4 d6d3 e5c7 h6d6 c7a7 d3d2 d1d2 d6d2 g2g3 b6b5 a7b8 g8f7 b8d8 f7e6 a2a3 d2d3 f1g2 d3a3 g3g4 a3d3 d8f8 e6d6 f8b8 d6e6 g4g5 d3c3 b8g8 e6d6 g8h7 c3b4 h7h2 f5f4 g5g6 d7e6 e3f4 d6d7 g6g7"}
 Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=99727531, hashfull=166, tbhits=8246, pv="e8f8 c4d5 d8d5 g1h1 a8c7 h6h2 c8g4 h2g3 g4d7 b1e4 d5d6 c1d3 b8d8 g3e3 b7b6 e4g6 d6g6 d3e5 g6e6 e1f3 f7f6 e5d7 d8d7 e3f4 e6d6 d2d3 c7d5 f4d2 e7e5"}"#;
 
-    use pgn_reader::Reader;
-
-    use crate::{WasmChess, helpers::pgn_reader::PGNResult};
+    use crate::WasmChess;
 
     use crate::tsify_structs::others::*;
-
-    use std::{
-        fs::{self},
-        io,
-    };
-
-    #[test]
-    fn headers() {
-        let mut reader = Reader::new(io::Cursor::new(PGN_FROM_WIKI));
-        let mut pgn_parser = PGNResult::default();
-        reader.read_game(&mut pgn_parser).unwrap();
-
-        pretty_assertions::assert_eq!(*pgn_parser.headers.get("Round").unwrap(), "29".to_owned());
-        assert!(pgn_parser.headers.contains_key("Site"));
-        assert!(pgn_parser.headers.contains_key("White"));
-        assert!(pgn_parser.headers.contains_key("Black"));
-        // pretty_assertions::assert_eq!(pgn_parser.move_list.len(), 85);
-
-        assert!(!pgn_parser.headers.contains_key("Variant"));
-    }
-
-    #[test]
-    fn load_and_read_valid_pgn() {
-        let pgn = fs::read("./src/tests/pgn/1.pgn").unwrap();
-
-        let mut reader: Reader<io::Cursor<Vec<u8>>> = Reader::new(io::Cursor::new(pgn));
-        let mut pgn_headers = PGNResult::default();
-
-        reader.read_game(&mut pgn_headers).unwrap();
-    }
-
-    #[test]
-    fn pgn_loads_correctly() {
-        let pgn = fs::read("./src/tests/pgn/1.pgn").unwrap();
-
-        let mut reader: Reader<io::Cursor<Vec<u8>>> = Reader::new(io::Cursor::new(pgn.clone()));
-        let mut pgn_headers = PGNResult::default();
-
-        reader.read_game(&mut pgn_headers).unwrap();
-
-        let mut wasm_chess = WasmChess::new(None).unwrap();
-        wasm_chess
-            .load_pgn(String::from_utf8(pgn).unwrap().as_str())
-            .unwrap();
-
-        pretty_assertions::assert_eq!(
-            wasm_chess.fen_at(0).unwrap(),
-            "nqbrkbrn/pppppp1p/6p1/8/7P/8/PPPPPPP1/BBNRNKRQ w KQkq - 0 2"
-        );
-    }
 
     #[test]
     fn set_header_ok() {
@@ -135,7 +83,6 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         );
     }
 
-    // TODO uncomment when implemented
     #[test]
     fn comments_ok() {
         let mut wasm_chess = WasmChess::new(None).unwrap();
@@ -325,10 +272,128 @@ Kf8 {-0.86/32 7.341s, tl=228.122s, latency=-0.001s, n=732199533, sd=55, nps=9972
         chess.undo();
         chess.undo();
 
-        // uci format castle
         chess.make_move("d1e1").unwrap();
         chess.make_move("f8e8").unwrap();
 
         pretty_assertions::assert_eq!(chess.fen(None), fen_last);
+    }
+}
+
+#[cfg(test)]
+pub mod chess_js_tests {
+    use crate::WasmChess;
+
+    #[test]
+    fn load_pgn_works() {
+        let fen: String = "4q2k/2r1r3/4PR1p/p1p5/P1Bp1Q1P/1P6/6P1/6K1 b - - 4 41".to_string();
+        let mut chess = WasmChess::new(None).unwrap();
+
+        let pgn = r#"
+[Event "Reykjavik WCh"]
+[Site "Reykjavik WCh"]
+[Date "1972.01.07"]
+[EventDate "?"]
+[Round "6"]
+[Result "1-0"]
+[White "Robert James Fischer"]
+[Black "Boris Spassky"]
+[ECO "D59"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "81"]
+
+1. c4 e6 2. Nf3 d5 3. d4 Nf6 4. Nc3 Be7 5. Bg5 O-O 6. e3 h6
+7. Bh4 b6 8. cxd5 Nxd5 9. Bxe7 Qxe7 10. Nxd5 exd5 11. Rc1 Be6
+12. Qa4 c5 13. Qa3 Rc8 14. Bb5 a6 15. dxc5 bxc5 16. O-O Ra7
+17. Be2 Nd7 18. Nd4 Qf8 19. Nxe6 fxe6 20. e4 d4 21. f4 Qe7
+22. e5 Rb8 23. Bc4 Kh8 24. Qh3 Nf8 25. b3 a5 26. f5 exf5
+27. Rxf5 Nh7 28. Rcf1 Qd8 29. Qg3 Re7 30. h4 Rbb7 31. e6 Rbc7
+32. Qe5 Qe8 33. a4 Qd8 34. R1f2 Qe8 35. R2f3 Qd8 36. Bd3 Qe8
+37. Qe4 Nf6 38. Rxf6 gxf6 39. Rxf6 Kg8 40. Bc4 Kh8 41. Qf4 1-0"#;
+
+        chess.load_pgn(pgn).unwrap();
+
+        pretty_assertions::assert_eq!(chess.fen(None), fen);
+
+        pretty_assertions::assert_eq!(
+            chess.zobrist_hash(),
+            WasmChess::new(Some(fen)).unwrap().zobrist_hash()
+        );
+    }
+
+    #[test]
+    fn load_pgn_works_no_header() {
+        let fen = "r1b1r3/pp1k3p/n2p4/8/Q7/b2P4/P1PK2P1/1R3B2 b - - 1 23".to_string();
+        let mut chess = WasmChess::new(None).unwrap();
+
+        let pgn = r#"1. e4 e5 2. f4 exf4 3. Nf3 g5 4. h4 g4 5. Ne5 Nf6 6. Nxg4 Nxe4 7. d3 Ng3 8.
+Bxf4 Nxh1 9. Qe2+ Qe7 10. Nf6+ Kd8 11. Bxc7+ Kxc7 12. Nd5+ Kd8 13. Nxe7 Bxe7
+14. Qg4 d6 15. Qf4 Rg8 16. Qxf7 Bxh4+ 17. Kd2 Re8 18. Na3 Na6 19. Qh5 Bf6 20.
+Qxh1 Bxb2 21. Qh4+ Kd7 22. Rb1 Bxa3 23. Qa4+"#;
+
+        chess.load_pgn(pgn).unwrap();
+
+        pretty_assertions::assert_eq!(chess.fen(None), fen);
+
+        pretty_assertions::assert_eq!(
+            chess.zobrist_hash(),
+            WasmChess::new(Some(fen)).unwrap().zobrist_hash()
+        );
+    }
+
+    #[test]
+    fn load_pgn_works_no_moves() {
+        let mut chess = WasmChess::new(None).unwrap();
+
+        chess.load_pgn("").unwrap();
+
+        pretty_assertions::assert_eq!(
+            chess.fen(None),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        );
+
+        pretty_assertions::assert_eq!(
+            chess.zobrist_hash(),
+            WasmChess::new(None).unwrap().zobrist_hash()
+        )
+    }
+
+    #[test]
+    fn load_pgn_works_no_moves_header_only() {
+        let mut chess = WasmChess::new(None).unwrap();
+
+        let pgn = r#"[White "White"]
+[Black "Black"]"#;
+
+        chess.load_pgn(pgn).unwrap();
+
+        pretty_assertions::assert_eq!(
+            chess.fen(None),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        );
+
+        pretty_assertions::assert_eq!(
+            chess.zobrist_hash(),
+            WasmChess::new(None).unwrap().zobrist_hash()
+        )
+    }
+
+    #[test]
+    fn load_pgn_works_empty_game() {
+        let mut chess = WasmChess::new(None).unwrap();
+
+        let pgn = chess.pgn(None);
+
+        chess.load_pgn(pgn.as_str()).unwrap();
+
+        pretty_assertions::assert_eq!(
+            chess.fen(None),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        );
+
+        pretty_assertions::assert_eq!(
+            chess.zobrist_hash(),
+            WasmChess::new(None).unwrap().zobrist_hash()
+        )
     }
 }

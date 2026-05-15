@@ -292,7 +292,7 @@ pub mod attackers_tests {
         );
 
         chess
-            .load("4k3/4n3/8/8/8/8/4R3/4K3 w - - 0 1".to_string())
+            .load("4k3/4n3/8/8/8/8/4R3/4K3 w - - 0 1", None)
             .unwrap();
 
         pretty_assertions::assert_eq!(

@@ -16,12 +16,12 @@ pub mod fen_tests {
         let fen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
         let fen_no_ep = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2";
 
-        assert!(chess.load(fen.to_string()).is_ok());
+        assert!(chess.load(fen, None).is_ok());
         pretty_assertions::assert_eq!(chess.fen(Some(true)), fen);
         pretty_assertions::assert_eq!(chess.fen(Some(false)), fen_no_ep);
 
         // Test invalid FEN
-        let result = chess.load("invalid".to_string());
+        let result = chess.load("invalid", None);
         assert!(result.is_err());
     }
 

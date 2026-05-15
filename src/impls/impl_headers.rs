@@ -5,8 +5,7 @@ impl WasmChess {
     #[wasm_bindgen(js_name = "getHeaders")]
     pub fn get_headers(&mut self) -> HeadersObj {
         self.populate_seven_tag_roster();
-
-        let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);
+        let pgn_result = self.pgn_result.get_or_insert_with(|| PGNResult::default());
 
         pgn_result.reorder_headers();
 
