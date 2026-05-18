@@ -9,7 +9,6 @@ use shakmaty::{
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    helpers::parsing::{self, san_to_san_plus, verbose_move_from_raw_move},
     impls::PGNResult,
     models::{
         BoardMatrix, BoardMatrixReturnObj, BoardMatrixRow, MoveVerbose, PieceObj, PieceSymbol,
@@ -20,12 +19,13 @@ use crate::{
             SquareColor, SquareInfoObj,
         },
     },
+    utils::parsing::{self, san_to_san_plus, verbose_move_from_raw_move},
 };
 
-mod helpers;
 mod impls;
 mod models;
 mod tests;
+mod utils;
 
 /// TODOs global
 /// add helper for fen parsing
@@ -70,19 +70,7 @@ pub struct WasmChess {
     pgn_result: Option<PGNResult>,
     seven_tag_roster: OrderMap<&'static str, &'static str>,
 
-    // TODO: implement board manip methods using this
-    // NOTES:
-    // i think any manip operation should make this
-    // field to be Some and any attempt at make_move
-    // will try and re-assemble chess position from this setup
-    // and make it None on success
-    // TODO: related
-    // update this setup after pgn_load, and other such methods
-    // TODO: make these two one struct since they are coupled
     editable: Option<EditablePosition>,
-    // TODO: delete later
-    // editable_setup: Option<Setup>,
-    // editable_chess_pos: Option<Chess>,
 }
 
 pub type FenString = String;
@@ -96,9 +84,9 @@ pub type MoveString = String;
 impl WasmChess {
     #[wasm_bindgen(constructor)]
     pub fn new(fen: Option<String>) -> Result<WasmChess, String> {
-        let starting_fen: String = fen.unwrap_or(
-            Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string(),
-        );
+        let starting_fen: String = fen.unwrap_or_else(|| {
+            Fen::from_position(&Chess::default(), shakmaty::EnPassantMode::Legal).to_string()
+        });
 
         let fen: Fen = match starting_fen.parse() {
             Ok(val) => val,
@@ -113,11 +101,15 @@ impl WasmChess {
         let chess: Chess = match fen.clone().into_position(shakmaty::CastlingMode::Chess960) {
             Ok(val) => val,
             Err(err) => {
-                return Err(format!(
-                    "Error converting FEN into chess position\nError message: {}\nFEN: {}",
-                    err,
-                    fen.to_string()
-                ));
+                let result = err
+                    .ignore_too_much_material()
+                    .or_else(|err| err.ignore_invalid_castling_rights())
+                    .or_else(|err| err.ignore_invalid_ep_square())
+                    .map_err(|err| {
+                        return format!("Invalid position: {:#?}", err);
+                    })?;
+
+                result
             }
         };
 
