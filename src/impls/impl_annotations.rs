@@ -4,7 +4,7 @@ use super::*;
 impl WasmChess {
     // TODO: add tests for nags ?
     #[wasm_bindgen(js_name = "getNags")]
-    pub fn get_nags(&self, fen: Option<FenString>) -> Vec<String> {
+    pub fn get_nags(&self, fen: Option<String>) -> Vec<String> {
         let Some(pgn_result) = self.pgn_result.as_ref() else {
             return vec![];
         };
@@ -19,7 +19,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "addNag")]
-    pub fn add_nag(&mut self, nag: &str, fen: Option<FenString>) {
+    pub fn add_nag(&mut self, nag: &str, fen: Option<String>) {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
         let Some(pgn_result) = self.pgn_result.as_mut() else {
@@ -34,7 +34,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "setNags")]
-    pub fn set_nags(&mut self, nags: Vec<String>, fen: Option<FenString>) {
+    pub fn set_nags(&mut self, nags: Vec<String>, fen: Option<String>) {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
         let Some(pgn_result) = self.pgn_result.as_mut() else {
@@ -45,7 +45,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "removeNag")]
-    pub fn remove_nag(&mut self, nag: String, fen: Option<FenString>) -> bool {
+    pub fn remove_nag(&mut self, nag: String, fen: Option<String>) -> bool {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
         let Some(pgn_result) = self.pgn_result.as_mut() else {
@@ -65,7 +65,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "removeNags")]
-    pub fn remove_nags(&mut self, fen: Option<FenString>) -> Vec<NAGString> {
+    pub fn remove_nags(&mut self, fen: Option<String>) -> Vec<String> {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
         let Some(pgn_result) = self.pgn_result.as_mut() else {
@@ -77,7 +77,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "getSuffixAnnotation")]
-    pub fn get_suffix_annotation(&self, fen: Option<FenString>) -> Option<SuffixString> {
+    pub fn get_suffix_annotation(&self, fen: Option<String>) -> Option<String> {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
         let Some(pgn_result) = self.pgn_result.as_ref() else {
@@ -92,7 +92,7 @@ impl WasmChess {
     pub fn set_suffix_annotation(
         &mut self,
         suffix: &str,
-        fen: Option<FenString>,
+        fen: Option<String>,
     ) -> Result<(), String> {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
@@ -107,7 +107,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "removeSuffixAnnotation")]
-    pub fn remove_suffix_annotation(&mut self, fen: Option<FenString>) -> Option<SuffixString> {
+    pub fn remove_suffix_annotation(&mut self, fen: Option<String>) -> Option<String> {
         let fen_key = fen.unwrap_or_else(|| self.fen(None));
 
         let pgn_result = self.pgn_result.get_or_insert_with(PGNResult::default);

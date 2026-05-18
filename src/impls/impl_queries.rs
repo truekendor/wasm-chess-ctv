@@ -4,7 +4,7 @@ use super::*;
 
 #[wasm_bindgen]
 impl WasmChess {
-    pub fn fen(&self, force_en_passant_square: Option<bool>) -> FenString {
+    pub fn fen(&self, force_en_passant_square: Option<bool>) -> String {
         let en_passant_mode = match force_en_passant_square {
             Some(true) => shakmaty::EnPassantMode::Always,
             Some(false) => shakmaty::EnPassantMode::Legal,
@@ -234,10 +234,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "legalMovesUci")]
-    pub fn legal_moves_uci(
-        &self,
-        filter_options: Option<LegalMovesFilterOptions>,
-    ) -> Vec<MoveString> {
+    pub fn legal_moves_uci(&self, filter_options: Option<LegalMovesFilterOptions>) -> Vec<String> {
         let filter_options = unwrap_filter_options(&filter_options);
 
         let legal_moves: Vec<String> = self
@@ -259,10 +256,7 @@ impl WasmChess {
     }
 
     #[wasm_bindgen(js_name = "legalMovesSan")]
-    pub fn legal_moves_san(
-        &self,
-        filter_options: Option<LegalMovesFilterOptions>,
-    ) -> Vec<MoveString> {
+    pub fn legal_moves_san(&self, filter_options: Option<LegalMovesFilterOptions>) -> Vec<String> {
         let filter_options = unwrap_filter_options(&filter_options);
 
         let legal_moves: Vec<String> = self

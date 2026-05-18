@@ -86,11 +86,7 @@ impl WasmChess {
             .insert(fen, comment.replace('{', "[").replace('}', "]"));
     }
 
-    fn get_comment_object(
-        &self,
-        fen_str: FenString,
-        pgn_result: &PGNResult,
-    ) -> Option<CommentsObj> {
+    fn get_comment_object(&self, fen_str: String, pgn_result: &PGNResult) -> Option<CommentsObj> {
         let comment_str = pgn_result.comments_map.get(&fen_str);
         let suffix: Option<String> = pgn_result.suffix_map.get(&fen_str).cloned();
         let nags = match pgn_result.nag_map.get(&fen_str) {

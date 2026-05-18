@@ -73,13 +73,6 @@ pub struct WasmChess {
     editable: Option<EditablePosition>,
 }
 
-pub type FenString = String;
-pub type SuffixString = String;
-
-// todo: make nag and suffix u8/u16/u32 number ??
-pub type NAGString = String;
-pub type MoveString = String;
-
 #[wasm_bindgen]
 impl WasmChess {
     #[wasm_bindgen(constructor)]

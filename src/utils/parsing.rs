@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Color, Move, Position, Role, fen::Fen, san::San, uci::UciMove};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{
-    MoveString,
-    models::{MoveVerbose, PieceSymbol, SquareStr, utils::ColorChar},
-};
+use crate::models::{MoveVerbose, PieceSymbol, SquareStr, utils::ColorChar};
 
 #[derive(Clone, Debug)]
 pub enum MoveParseError {
@@ -30,7 +27,7 @@ impl std::error::Error for MoveParseError {}
 #[derive(tsify::Tsify, Serialize, Deserialize)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct MovesAndError {
-    pub moves: Vec<MoveString>,
+    pub moves: Vec<String>,
     pub message: Option<String>,
 }
 

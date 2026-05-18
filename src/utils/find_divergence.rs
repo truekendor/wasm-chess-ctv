@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 use shakmaty::{Chess, Move, Position, fen::Fen, zobrist::Zobrist64};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{
-    FenString,
-    utils::parsing::{str_to_move, to_san},
-};
+use crate::utils::parsing::{str_to_move, to_san};
 
 pub struct InternalMovesAndHash {
     zobrist_hash: Vec<Zobrist64>,
@@ -35,7 +32,7 @@ pub struct DivergeData {
 
 #[wasm_bindgen(js_name = "findDivergence")]
 pub fn find_divergence(
-    common_fen: FenString,
+    common_fen: String,
     move_list_current: Vec<String>,
     move_list_reverse: Vec<String>,
 ) -> Vec<TranspositionDataEntry> {

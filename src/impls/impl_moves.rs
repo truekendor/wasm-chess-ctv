@@ -156,7 +156,7 @@ impl WasmChess {
     /// ])
     /// ```
     #[wasm_bindgen(js_name = "playMovesBatch")]
-    pub fn play_moves_batch(&mut self, moves: Vec<MoveString>) -> Result<Vec<MoveVerbose>, String> {
+    pub fn play_moves_batch(&mut self, moves: Vec<String>) -> Result<Vec<MoveVerbose>, String> {
         moves
             .iter()
             .map(|move_str| {
