@@ -2,7 +2,7 @@
 pub mod diverge_transpose_test {
     use shakmaty::{Chess, fen::Fen};
 
-    use crate::helpers::find_divergence::{DivergeData, TranspositionDataEntry, find_divergence};
+    use crate::utils::find_divergence::{DivergeData, TranspositionDataEntry, find_divergence};
 
     #[test]
     fn immediate_diverge() {
